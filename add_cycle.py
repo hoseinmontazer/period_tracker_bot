@@ -1,7 +1,7 @@
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler, MessageHandler, filters
 from telegram import Update
-
+from bot import MENU
 # Define the states for adding a new cycle
 START_DATE, END_DATE, SYMPTOMS, MEDICATION = range(4)
 
@@ -32,7 +32,7 @@ async def handle_end_date(update, context):
         # If user skips, move to the next step (SYMPTOMS)
         context.user_data['end_date'] = None  # Mark as skipped
         await update.message.reply_text("Skipping end date. Let's move to the next step (Symptoms).")
-        return await handle_symptoms(update, context)
+        return SYMPTOMS
 
     context.user_data['end_date'] = update.message.text.strip()  # Save the end date
     await update.message.reply_text("Enter any symptoms (or leave blank to skip):")
@@ -44,7 +44,7 @@ async def handle_symptoms(update, context):
         # If user skips, move to the next step (MEDICATION)
         context.user_data['symptoms'] = None  # Mark as skipped
         await update.message.reply_text("Skipping symptoms. Let's move to the next step (Medication).")
-        return await handle_medication(update, context)
+        return MEDICATION
     
     context.user_data['symptoms'] = update.message.text.strip() or ""  # Save symptoms
     await update.message.reply_text("Enter any medication (or leave blank to skip):")
@@ -63,7 +63,7 @@ async def handle_medication(update, context):
     await update.message.reply_text("Cycle added successfully!")
     return await finish_cycle(update, context)
 
-# Function to finish and call the API to save the cycle
+
 async def finish_cycle(update, context):
     # Here you can make the API call to save the cycle data (start_date, end_date, symptoms, medication)
     start_date = context.user_data.get('start_date')
@@ -75,7 +75,13 @@ async def finish_cycle(update, context):
     # api.save_cycle(start_date, end_date, symptoms, medication)
     
     await update.message.reply_text("Cycle data has been saved successfully!")
-    return ConversationHandler.END
+
+    # Clear user data for the next cycle
+    context.user_data.clear()
+
+    # Return to the main menu
+    return MENU  # MENU is defined in bot.py
+
 
 # Cancel handler
 async def cancel(update: Update, context: CallbackContext) -> int:
@@ -95,4 +101,3 @@ add_cycle_conversation = ConversationHandler(
     },
     fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],  # Handle cancellation here
 )
-
