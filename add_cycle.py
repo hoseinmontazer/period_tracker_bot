@@ -5,6 +5,8 @@ from telegram.ext import (
 )
 from states import MENU, START_DATE, END_DATE, SYMPTOMS, MEDICATION
 from calendar_keyboard import CalendarKeyboard
+import httpx
+from config import BASE_URL
 
 calendar = CalendarKeyboard()
 
@@ -83,18 +85,67 @@ async def handle_symptoms(update, context):
     await update.message.reply_text("Enter any medication (or leave blank to skip):")
     return MEDICATION
 
-# State handler for capturing medication
+async def save_cycle_to_api(chat_id, cycle_data, user_tokens):
+    """Save cycle data to the API"""
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        return False, "Authentication required"
+    
+    access_token = user_tokens[chat_id]["access"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{BASE_URL}/api/periods/",
+                headers=headers,
+                data={
+                    "start_date": cycle_data["start_date"],
+                    "end_date": cycle_data["end_date"],
+                    "symptoms": cycle_data["symptoms"],
+                    "medication": cycle_data["medication"]
+                }
+            )
+            
+            if response.status_code == 201:
+                return True, response.json()
+            else:
+                return False, f"API Error: {response.status_code}"
+                
+        except Exception as e:
+            return False, f"Error: {str(e)}"
+
 async def handle_medication(update, context):
+    chat_id = str(update.message.chat_id)
+    
     if update.message.text.lower() == 'skip':
         context.user_data['medication'] = None
     else:
         context.user_data['medication'] = update.message.text.strip() or ""
     
-    # Use ReplyKeyboardRemove to clear the keyboard
-    await update.message.reply_text(
-        "✅ Cycle data has been saved successfully!",
-        reply_markup=ReplyKeyboardRemove()
-    )
+    # Prepare cycle data
+    cycle_data = {
+        "start_date": context.user_data.get('start_date'),
+        "end_date": context.user_data.get('end_date'),
+        "symptoms": context.user_data.get('symptoms', ""),
+        "medication": context.user_data.get('medication', "")
+    }
+    
+    # Import user_tokens here to avoid circular import
+    from bot import user_tokens
+    
+    # Save to API
+    success, result = await save_cycle_to_api(chat_id, cycle_data, user_tokens)
+    
+    if success:
+        await update.message.reply_text(
+            "✅ Cycle data has been saved successfully!",
+            reply_markup=ReplyKeyboardRemove()
+        )
+    else:
+        await update.message.reply_text(
+            f"❌ Failed to save cycle data: {result}",
+            reply_markup=ReplyKeyboardRemove()
+        )
 
     # Clear user data
     context.user_data.clear()
@@ -111,7 +162,6 @@ async def handle_medication(update, context):
         parse_mode="Markdown"
     )
     
-    # End the conversation instead of returning to MENU
     return ConversationHandler.END
 
 # Cancel handler
