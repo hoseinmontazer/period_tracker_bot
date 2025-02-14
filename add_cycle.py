@@ -1,6 +1,7 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, ConversationHandler, MessageHandler, filters
 from telegram import Update
+from bot import MENU, show_main_menu  # Import MENU state
 
 
 # Define the states for adding a new cycle
@@ -54,24 +55,11 @@ async def handle_symptoms(update, context):
 # State handler for capturing medication
 async def handle_medication(update, context):
     if update.message.text.lower() == 'skip':
-        # If user skips, call the API and end the conversation
-        context.user_data['medication'] = None  # Mark as skipped
-        await update.message.reply_text("Skipping medication. Cycle creation is complete.")
-        return await finish_cycle(update, context)
+        context.user_data['medication'] = None
+    else:
+        context.user_data['medication'] = update.message.text.strip() or ""
     
-    context.user_data['medication'] = update.message.text.strip() or ""  # Save medication
-    # Here you would send the cycle data to the API to save it
-    await update.message.reply_text("Cycle added successfully!")
-    return await finish_cycle(update, context)
-
-
-async def finish_cycle(update, context):
-    start_date = context.user_data.get('start_date')
-    end_date = context.user_data.get('end_date', None)
-    symptoms = context.user_data.get('symptoms', "")
-    medication = context.user_data.get('medication', "")
-
-    # Use ReplyKeyboardRemove to clear the "Skip" keyboard
+    # Use ReplyKeyboardRemove to clear the keyboard
     await update.message.reply_text(
         "✅ Cycle data has been saved successfully!",
         reply_markup=ReplyKeyboardRemove()
@@ -81,11 +69,8 @@ async def finish_cycle(update, context):
     context.user_data.clear()
 
     # Show main menu
-    from bot import show_main_menu
     await show_main_menu(update)
-    
-    # End the add cycle conversation
-    return MENU  # Return to MENU state instead of ending conversation
+    return MENU
 
 # Cancel handler
 async def cancel(update: Update, context: CallbackContext) -> int:
