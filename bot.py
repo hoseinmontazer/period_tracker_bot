@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 # Load user tokens
 user_tokens = load_tokens()
 
+# At the top of the file, add MENU to the exports
+__all__ = ['MENU', 'show_main_menu']
+
 async def start(update: Update, context: CallbackContext) -> int:
     """Start the bot and check if the user is logged in."""
     chat_id = str(update.message.chat_id)

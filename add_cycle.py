@@ -80,8 +80,12 @@ async def finish_cycle(update, context):
     # Clear user data
     context.user_data.clear()
 
+    # Show main menu
+    from bot import show_main_menu
+    await show_main_menu(update)
+    
     # End the add cycle conversation
-    return ConversationHandler.END
+    return MENU  # Return to MENU state instead of ending conversation
 
 # Cancel handler
 async def cancel(update: Update, context: CallbackContext) -> int:
