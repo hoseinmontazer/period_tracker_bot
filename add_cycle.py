@@ -1,7 +1,7 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, ConversationHandler, MessageHandler, filters
 from telegram import Update
-from bot import MENU, show_main_menu  # Import MENU state
+from states import MENU, START_DATE, END_DATE, SYMPTOMS, MEDICATION
 
 
 # Define the states for adding a new cycle
@@ -68,8 +68,17 @@ async def handle_medication(update, context):
     # Clear user data
     context.user_data.clear()
 
-    # Show main menu
-    await show_main_menu(update)
+    # Show menu keyboard
+    reply_keyboard = [
+        ['Track Period', 'View History'],
+        ['Cycle Analysis', 'Add New Cycle'],
+        ['Logout']
+    ]
+    await update.message.reply_text(
+        "📋 **Main Menu**\nChoose an option:",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
+        parse_mode="Markdown"
+    )
     return MENU
 
 # Cancel handler

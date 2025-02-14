@@ -10,9 +10,7 @@ from cycle_analysis import fetch_cycle_analysis
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
-
-# Define conversation states
-REGISTER, LOGIN, PERIOD_TRACKING, MENU = range(4)
+from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU
 
 # Logging setup
 logging.basicConfig(
