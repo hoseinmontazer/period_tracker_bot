@@ -127,6 +127,9 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
+    # Get the handler from add_cycle_conversation's entry points
+    add_cycle_handler = add_cycle_conversation.entry_points[0].callback
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -137,7 +140,7 @@ def main():
                 MessageHandler(filters.Regex("^Track Period$"), view_history),
                 MessageHandler(filters.Regex("^View History$"), view_history),
                 MessageHandler(filters.Regex("^Cycle Analysis$"), cycle_analysis_handler),
-                MessageHandler(filters.Regex("^Add New Cycle$"), add_cycle_conversation.entry_points[0]),  # Start add_cycle conversation
+                MessageHandler(filters.Regex("^Add New Cycle$"), add_cycle_handler),  # Use the callback function
                 MessageHandler(filters.Regex("^Logout$"), logout),
             ],
         },
@@ -146,6 +149,7 @@ def main():
 
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler('logout', logout))
+    application.add_handler(add_cycle_conversation)  # Add the full conversation handler
 
     application.run_polling()
 
