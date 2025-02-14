@@ -18,6 +18,13 @@ SYMPTOM_OPTIONS = [
     ['Write Custom Symptoms', 'Done']
 ]
 
+# Predefined medication options
+MEDICATION_OPTIONS = [
+    ['Ibuprofen', 'Acetaminophen'],
+    ['Birth Control Pills', 'Pain Relievers'],
+    ['Write Custom Medication', 'Skip']
+]
+
 async def start_add_cycle(update, context):
     chat_id = str(update.message.chat_id)
     
@@ -69,10 +76,10 @@ async def handle_symptoms(update, context):
         final_symptoms = ", ".join(context.user_data['symptoms']) if context.user_data['symptoms'] else ""
         context.user_data['final_symptoms'] = final_symptoms
         
-        # Move to medication
+        # Move to medication with predefined options
         await update.message.reply_text(
-            "Enter any medication (or press Skip):",
-            reply_markup=ReplyKeyboardMarkup([['Skip']], one_time_keyboard=True)
+            "Select medication or add your own:",
+            reply_markup=ReplyKeyboardMarkup(MEDICATION_OPTIONS, one_time_keyboard=False)
         )
         return MEDICATION
         
@@ -122,12 +129,28 @@ async def save_cycle_to_api(chat_id, cycle_data, user_tokens):
             return False, f"Error: {str(e)}"
 
 async def handle_medication(update, context):
+    text = update.message.text
     chat_id = str(update.message.chat_id)
-    
-    if update.message.text.lower() == 'skip':
+
+    if text == 'Skip':
         context.user_data['medication'] = ""
+    elif text == 'Write Custom Medication':
+        await update.message.reply_text(
+            "Please type your medication and press 'Done' when finished:",
+            reply_markup=ReplyKeyboardMarkup([['Done']], one_time_keyboard=True)
+        )
+        return MEDICATION
+    elif text == 'Done':
+        # If they've written custom medication, it should be in context.user_data['custom_medication']
+        context.user_data['medication'] = context.user_data.get('custom_medication', "")
+    elif text in ['Ibuprofen', 'Acetaminophen', 'Birth Control Pills', 'Pain Relievers']:
+        context.user_data['medication'] = text
     else:
-        context.user_data['medication'] = update.message.text.strip()
+        # Store custom medication text
+        context.user_data['custom_medication'] = text
+        # Return without proceeding to save if they're still typing custom medication
+        if text != 'Done':
+            return MEDICATION
     
     # Prepare cycle data
     cycle_data = {
