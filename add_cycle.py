@@ -1,4 +1,4 @@
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, ConversationHandler, MessageHandler, filters
 from telegram import Update
 
@@ -71,7 +71,11 @@ async def finish_cycle(update, context):
     symptoms = context.user_data.get('symptoms', "")
     medication = context.user_data.get('medication', "")
 
-    await update.message.reply_text("✅ Cycle data has been saved successfully!")
+    # Use ReplyKeyboardRemove to clear the "Skip" keyboard
+    await update.message.reply_text(
+        "✅ Cycle data has been saved successfully!",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
     # Clear user data
     context.user_data.clear()
