@@ -16,6 +16,9 @@ async def start_add_cycle(update, context):
         await update.message.reply_text("⚠️ You need to log in first. Use /start to login.")
         return ConversationHandler.END
     
+    # End any existing conversation
+    context.user_data.clear()
+    
     # If authenticated, proceed with cycle data collection
     reply_keyboard = [['Skip']]
     await update.message.reply_text(
