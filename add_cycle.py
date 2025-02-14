@@ -8,7 +8,15 @@ START_DATE, END_DATE, SYMPTOMS, MEDICATION = range(4)
 
 # This is the function for starting the add cycle conversation
 async def start_add_cycle(update, context):
-    # Create custom keyboard with "Skip" option
+    chat_id = str(update.message.chat_id)
+    
+    # First check if user is authenticated
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        await update.message.reply_text("⚠️ You need to log in first. Use /start to login.")
+        return ConversationHandler.END
+    
+    # If authenticated, proceed with cycle data collection
     reply_keyboard = [['Skip']]
     await update.message.reply_text(
         "Enter the start date of your new cycle (YYYY-MM-DD):",
