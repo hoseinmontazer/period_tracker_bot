@@ -3,17 +3,21 @@ from telegram.ext import (
     CallbackContext, ConversationHandler, MessageHandler, 
     filters, CallbackQueryHandler
 )
-from states import MENU, START_DATE, END_DATE, SYMPTOMS, MEDICATION
-from calendar_keyboard import CalendarKeyboard
 import httpx
 from config import BASE_URL
+from states import MENU, START_DATE, SYMPTOMS, MEDICATION
+from calendar_keyboard import CalendarKeyboard
 
 calendar = CalendarKeyboard()
 
-# Define the states for adding a new cycle
-START_DATE, END_DATE, SYMPTOMS, MEDICATION = range(4)
+# Predefined symptom options
+SYMPTOM_OPTIONS = [
+    ['Cramps', 'Headache', 'Fatigue'],
+    ['Bloating', 'Mood Swings', 'Acne'],
+    ['Back Pain', 'Breast Tenderness'],
+    ['Write Custom Symptoms', 'Done']
+]
 
-# This is the function for starting the add cycle conversation
 async def start_add_cycle(update, context):
     chat_id = str(update.message.chat_id)
     
@@ -40,50 +44,54 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
         context.user_data['start_date'] = selected_date
         await query.message.edit_text(f"Selected date: {selected_date}")
         
-        # Ask for end date
+        # Initialize empty symptoms list
+        context.user_data['symptoms'] = []
+        
+        # Move to symptoms selection
         await query.message.reply_text(
-            "Please select the end date or press Skip:",
-            reply_markup=calendar.create_calendar()
+            "Select your symptoms (you can select multiple):",
+            reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS, one_time_keyboard=False)
         )
-        return END_DATE
+        return SYMPTOMS
     else:  # Navigation through calendar
         await query.message.edit_reply_markup(reply_markup=selected_date)
         return START_DATE
 
-# State handler for capturing the start date
-async def handle_start_date(update, context):
-    if update.message.text.lower() == 'skip':
-        # If the user skips, this is invalid since start date is required
-        await update.message.reply_text("The start date is required. Please enter a valid date (YYYY-MM-DD).")
-        return START_DATE
-
-    context.user_data['start_date'] = update.message.text.strip()  # Save the start date
-    await update.message.reply_text("Enter the end date (YYYY-MM-DD) or press 'Skip':")
-    return END_DATE
-
-# State handler for capturing the end date
-async def handle_end_date(update, context):
-    if update.message.text.lower() == 'skip':
-        # If user skips, move to the next step (SYMPTOMS)
-        context.user_data['end_date'] = None  # Mark as skipped
-        await update.message.reply_text("Skipping end date. Let's move to the next step (Symptoms).")
-        return SYMPTOMS
-
-    context.user_data['end_date'] = update.message.text.strip()  # Save the end date
-    await update.message.reply_text("Enter any symptoms (or leave blank to skip):")
-    return SYMPTOMS
-
-# State handler for capturing symptoms
 async def handle_symptoms(update, context):
-    if update.message.text.lower() == 'skip':
-        # If user skips, move to the next step (MEDICATION)
-        context.user_data['symptoms'] = None  # Mark as skipped
-        await update.message.reply_text("Skipping symptoms. Let's move to the next step (Medication).")
-        return MEDICATION
+    text = update.message.text
     
-    context.user_data['symptoms'] = update.message.text.strip() or ""  # Save symptoms
-    await update.message.reply_text("Enter any medication (or leave blank to skip):")
-    return MEDICATION
+    # Initialize symptoms list if it doesn't exist
+    if 'symptoms' not in context.user_data:
+        context.user_data['symptoms'] = []
+    
+    if text == 'Done':
+        # Join all symptoms with commas
+        final_symptoms = ", ".join(context.user_data['symptoms']) if context.user_data['symptoms'] else ""
+        context.user_data['final_symptoms'] = final_symptoms
+        
+        # Move to medication
+        await update.message.reply_text(
+            "Enter any medication (or press Skip):",
+            reply_markup=ReplyKeyboardMarkup([['Skip']], one_time_keyboard=True)
+        )
+        return MEDICATION
+        
+    elif text == 'Write Custom Symptoms':
+        await update.message.reply_text(
+            "Please type your symptoms and press 'Done' when finished:",
+            reply_markup=ReplyKeyboardMarkup([['Done']], one_time_keyboard=True)
+        )
+        return SYMPTOMS
+        
+    elif text not in ['Done', 'Write Custom Symptoms']:
+        # Add the symptom to the list if it's not already there
+        if text not in context.user_data['symptoms']:
+            context.user_data['symptoms'].append(text)
+            await update.message.reply_text(
+                f"Added: {text}\nSelected symptoms: {', '.join(context.user_data['symptoms'])}\n\nSelect more or press 'Done'",
+                reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS, one_time_keyboard=False)
+            )
+        return SYMPTOMS
 
 async def save_cycle_to_api(chat_id, cycle_data, user_tokens):
     """Save cycle data to the API"""
@@ -100,7 +108,6 @@ async def save_cycle_to_api(chat_id, cycle_data, user_tokens):
                 headers=headers,
                 data={
                     "start_date": cycle_data["start_date"],
-                    "end_date": cycle_data["end_date"],
                     "symptoms": cycle_data["symptoms"],
                     "medication": cycle_data["medication"]
                 }
@@ -118,15 +125,14 @@ async def handle_medication(update, context):
     chat_id = str(update.message.chat_id)
     
     if update.message.text.lower() == 'skip':
-        context.user_data['medication'] = None
+        context.user_data['medication'] = ""
     else:
-        context.user_data['medication'] = update.message.text.strip() or ""
+        context.user_data['medication'] = update.message.text.strip()
     
     # Prepare cycle data
     cycle_data = {
         "start_date": context.user_data.get('start_date'),
-        "end_date": context.user_data.get('end_date'),
-        "symptoms": context.user_data.get('symptoms', ""),
+        "symptoms": context.user_data.get('final_symptoms', ""),
         "medication": context.user_data.get('medication', "")
     }
     
@@ -164,7 +170,6 @@ async def handle_medication(update, context):
     
     return ConversationHandler.END
 
-# Cancel handler
 async def cancel(update: Update, context: CallbackContext) -> int:
     """Handles canceling the operation and ends the conversation."""
     await update.message.reply_text("Operation cancelled.")
@@ -175,11 +180,7 @@ add_cycle_conversation = ConversationHandler(
     states={
         START_DATE: [
             CallbackQueryHandler(handle_calendar_selection),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_start_date)
-        ],
-        END_DATE: [
-            CallbackQueryHandler(handle_calendar_selection),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_end_date)
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_calendar_selection)
         ],
         SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],
         MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],
