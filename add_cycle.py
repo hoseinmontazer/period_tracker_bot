@@ -1,21 +1,52 @@
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import CallbackContext, ConversationHandler, MessageHandler, filters
-from telegram import Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram.ext import (
+    CallbackContext, ConversationHandler, MessageHandler, 
+    filters, CallbackQueryHandler
+)
 from states import MENU, START_DATE, END_DATE, SYMPTOMS, MEDICATION
+from calendar_keyboard import CalendarKeyboard
 
+calendar = CalendarKeyboard()
 
 # Define the states for adding a new cycle
 START_DATE, END_DATE, SYMPTOMS, MEDICATION = range(4)
 
 # This is the function for starting the add cycle conversation
 async def start_add_cycle(update, context):
-    # Create custom keyboard with "Skip" option
-    reply_keyboard = [['Skip']]
+    chat_id = str(update.message.chat_id)
+    
+    # First check if user is authenticated
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        await update.message.reply_text("⚠️ You need to log in first. Use /start to login.")
+        return ConversationHandler.END
+    
+    # Show calendar for start date selection
     await update.message.reply_text(
-        "Enter the start date of your new cycle (YYYY-MM-DD):",
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        "Please select the start date:",
+        reply_markup=calendar.create_calendar()
     )
     return START_DATE
+
+async def handle_calendar_selection(update: Update, context: CallbackContext):
+    query = update.callback_query
+    await query.answer()
+    
+    selected_date = calendar.process_calendar_selection(query)
+    
+    if isinstance(selected_date, str):  # Date was selected
+        context.user_data['start_date'] = selected_date
+        await query.message.edit_text(f"Selected date: {selected_date}")
+        
+        # Ask for end date
+        await query.message.reply_text(
+            "Please select the end date or press Skip:",
+            reply_markup=calendar.create_calendar()
+        )
+        return END_DATE
+    else:  # Navigation through calendar
+        await query.message.edit_reply_markup(reply_markup=selected_date)
+        return START_DATE
 
 # State handler for capturing the start date
 async def handle_start_date(update, context):
@@ -90,13 +121,19 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 add_cycle_conversation = ConversationHandler(
-    entry_points=[MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle)],  # Start cycle addition
+    entry_points=[MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle)],
     states={
-        START_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_start_date)],  
-        END_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_end_date)],  
-        SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],  
-        MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],  
+        START_DATE: [
+            CallbackQueryHandler(handle_calendar_selection),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_start_date)
+        ],
+        END_DATE: [
+            CallbackQueryHandler(handle_calendar_selection),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_end_date)
+        ],
+        SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],
+        MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],
     },
-    fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],  
-    allow_reentry=True  # <-- Add this so the user can restart the conversation
+    fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],
+    allow_reentry=True
 )
