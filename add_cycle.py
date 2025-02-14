@@ -22,7 +22,7 @@ SYMPTOM_OPTIONS = [
 MEDICATION_OPTIONS = [
     ['Ibuprofen', 'Acetaminophen'],
     ['Birth Control Pills', 'Pain Relievers'],
-    ['Write Custom Medication', 'Skip']
+    ['Write Custom Medication', 'Done']
 ]
 
 async def start_add_cycle(update, context):
@@ -76,9 +76,12 @@ async def handle_symptoms(update, context):
         final_symptoms = ", ".join(context.user_data['symptoms']) if context.user_data['symptoms'] else ""
         context.user_data['final_symptoms'] = final_symptoms
         
+        # Initialize empty medications list
+        context.user_data['medications'] = []
+        
         # Move to medication with predefined options
         await update.message.reply_text(
-            "Select medication or add your own:",
+            "Select your medications (you can select multiple):",
             reply_markup=ReplyKeyboardMarkup(MEDICATION_OPTIONS, one_time_keyboard=False)
         )
         return MEDICATION
@@ -130,68 +133,74 @@ async def save_cycle_to_api(chat_id, cycle_data, user_tokens):
 
 async def handle_medication(update, context):
     text = update.message.text
-    chat_id = str(update.message.chat_id)
+    
+    # Initialize medications list if it doesn't exist
+    if 'medications' not in context.user_data:
+        context.user_data['medications'] = []
+    
+    if text == 'Done':
+        # Join all medications with commas
+        final_medications = ", ".join(context.user_data['medications']) if context.user_data['medications'] else ""
+        context.user_data['medication'] = final_medications
+        
+        # Prepare cycle data
+        cycle_data = {
+            "start_date": context.user_data.get('start_date'),
+            "symptoms": context.user_data.get('final_symptoms', ""),
+            "medication": context.user_data.get('medication', "")
+        }
+        
+        # Import user_tokens here to avoid circular import
+        from bot import user_tokens
+        chat_id = str(update.message.chat_id)
+        
+        # Save to API
+        success, result = await save_cycle_to_api(chat_id, cycle_data, user_tokens)
+        
+        if success:
+            await update.message.reply_text(
+                "✅ Cycle data has been saved successfully!",
+                reply_markup=ReplyKeyboardRemove()
+            )
+        else:
+            await update.message.reply_text(
+                f"❌ Failed to save cycle data: {result}",
+                reply_markup=ReplyKeyboardRemove()
+            )
 
-    if text == 'Skip':
-        context.user_data['medication'] = ""
+        # Clear user data
+        context.user_data.clear()
+
+        # Show menu keyboard
+        reply_keyboard = [
+            ['Track Period', 'View History'],
+            ['Cycle Analysis', 'Add New Cycle'],
+            ['Logout']
+        ]
+        await update.message.reply_text(
+            "📋 **Main Menu**\nChoose an option:",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
+            parse_mode="Markdown"
+        )
+        
+        return ConversationHandler.END
+        
     elif text == 'Write Custom Medication':
         await update.message.reply_text(
             "Please type your medication and press 'Done' when finished:",
             reply_markup=ReplyKeyboardMarkup([['Done']], one_time_keyboard=True)
         )
         return MEDICATION
-    elif text == 'Done':
-        # If they've written custom medication, it should be in context.user_data['custom_medication']
-        context.user_data['medication'] = context.user_data.get('custom_medication', "")
-    elif text in ['Ibuprofen', 'Acetaminophen', 'Birth Control Pills', 'Pain Relievers']:
-        context.user_data['medication'] = text
-    else:
-        # Store custom medication text
-        context.user_data['custom_medication'] = text
-        # Return without proceeding to save if they're still typing custom medication
-        if text != 'Done':
-            return MEDICATION
-    
-    # Prepare cycle data
-    cycle_data = {
-        "start_date": context.user_data.get('start_date'),
-        "symptoms": context.user_data.get('final_symptoms', ""),
-        "medication": context.user_data.get('medication', "")
-    }
-    
-    # Import user_tokens here to avoid circular import
-    from bot import user_tokens
-    
-    # Save to API
-    success, result = await save_cycle_to_api(chat_id, cycle_data, user_tokens)
-    
-    if success:
-        await update.message.reply_text(
-            "✅ Cycle data has been saved successfully!",
-            reply_markup=ReplyKeyboardRemove()
-        )
-    else:
-        await update.message.reply_text(
-            f"❌ Failed to save cycle data: {result}",
-            reply_markup=ReplyKeyboardRemove()
-        )
-
-    # Clear user data
-    context.user_data.clear()
-
-    # Show menu keyboard
-    reply_keyboard = [
-        ['Track Period', 'View History'],
-        ['Cycle Analysis', 'Add New Cycle'],
-        ['Logout']
-    ]
-    await update.message.reply_text(
-        "📋 **Main Menu**\nChoose an option:",
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
-        parse_mode="Markdown"
-    )
-    
-    return ConversationHandler.END
+        
+    elif text not in ['Done', 'Write Custom Medication']:
+        # Add the medication to the list if it's not already there
+        if text not in context.user_data['medications']:
+            context.user_data['medications'].append(text)
+            await update.message.reply_text(
+                f"Added: {text}\nSelected medications: {', '.join(context.user_data['medications'])}\n\nSelect more or press 'Done'",
+                reply_markup=ReplyKeyboardMarkup(MEDICATION_OPTIONS, one_time_keyboard=False)
+            )
+        return MEDICATION
 
 async def cancel(update: Update, context: CallbackContext) -> int:
     """Handles canceling the operation and ends the conversation."""
