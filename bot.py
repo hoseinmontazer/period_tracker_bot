@@ -7,7 +7,7 @@ from telegram.ext import (
 from auth import authenticate_user
 from period import fetch_periods
 from cycle_analysis import fetch_cycle_analysis
-from add_cycle import add_cycle_conversation
+from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
 
@@ -141,6 +141,7 @@ def main():
                 MessageHandler(filters.Regex("^Track Period$"), view_history),
                 MessageHandler(filters.Regex("^View History$"), view_history),
                 MessageHandler(filters.Regex("^Cycle Analysis$"), cycle_analysis_handler),
+                MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle),
                 MessageHandler(filters.Regex("^Logout$"), logout),
             ],
         },
