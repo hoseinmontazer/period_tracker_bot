@@ -79,7 +79,9 @@ async def handle_medication(update, context):
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
         parse_mode="Markdown"
     )
-    return MENU
+    
+    # End the conversation instead of returning to MENU
+    return ConversationHandler.END
 
 # Cancel handler
 async def cancel(update: Update, context: CallbackContext) -> int:
