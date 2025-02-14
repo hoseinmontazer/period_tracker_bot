@@ -1,7 +1,8 @@
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler, MessageHandler, filters
 from telegram import Update
-from bot import MENU
+
+
 # Define the states for adding a new cycle
 START_DATE, END_DATE, SYMPTOMS, MEDICATION = range(4)
 
@@ -65,23 +66,17 @@ async def handle_medication(update, context):
 
 
 async def finish_cycle(update, context):
-    # Here you can make the API call to save the cycle data (start_date, end_date, symptoms, medication)
     start_date = context.user_data.get('start_date')
     end_date = context.user_data.get('end_date', None)
     symptoms = context.user_data.get('symptoms', "")
     medication = context.user_data.get('medication', "")
 
-    # Example of calling the API (replace with your actual API logic)
-    # api.save_cycle(start_date, end_date, symptoms, medication)
-    
-    await update.message.reply_text("Cycle data has been saved successfully!")
+    await update.message.reply_text("✅ Cycle data has been saved successfully!")
 
-    # Clear user data for the next cycle
+    # Clear user data
     context.user_data.clear()
 
-    # Return to the main menu
-    return MENU  # MENU is defined in bot.py
-
+    return ConversationHandler.END  # ✅ End the conversation properly
 
 # Cancel handler
 async def cancel(update: Update, context: CallbackContext) -> int:
@@ -89,15 +84,14 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Operation cancelled.")
     return ConversationHandler.END
 
-
-# Now define the conversation handler for the add cycle process
 add_cycle_conversation = ConversationHandler(
-    entry_points=[MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle)],  # Trigger the start of the conversation
+    entry_points=[MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle)],  # Start cycle addition
     states={
-        START_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_start_date)],  # Required field
-        END_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_end_date)],  # Optional field
-        SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],  # Optional field
-        MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],  # Optional field
+        START_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_start_date)],  
+        END_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_end_date)],  
+        SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],  
+        MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],  
     },
-    fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],  # Handle cancellation here
+    fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],  
+    allow_reentry=True  # <-- Add this so the user can restart the conversation
 )
