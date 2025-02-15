@@ -182,12 +182,12 @@ async def logout(update: Update, context: CallbackContext) -> int:
 async def view_history(update: Update, context: CallbackContext) -> int:
     """Handle 'View History' - Fetch and display periods."""
     chat_id = str(update.message.chat_id)
+    lang = context.user_data.get('language', 'en')
+    
     if chat_id in user_tokens and "access" in user_tokens[chat_id]:
-        access_token = user_tokens[chat_id]["access"]
         await fetch_periods(update, context)
         return MENU
     else:
-        lang = context.user_data.get('language', 'en')
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 

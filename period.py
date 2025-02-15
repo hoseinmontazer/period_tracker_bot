@@ -7,15 +7,22 @@ from languages import get_message
 async def fetch_periods(update, context):
     """Fetch and display period history"""
     lang = context.user_data.get('language', 'en')
+    chat_id = str(update.message.chat_id)
+    
+    # Get access token from user_tokens
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+        return
+        
+    access_token = user_tokens[chat_id]["access"]
     headers = {"Authorization": f"Bearer {access_token}"}
-    print(f"Using access token in periods: {access_token}")
-   
+    
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{BASE_URL}/api/periods/", headers=headers)
 
         if response.status_code == 401:  # Token expired
-            chat_id = str(update.message.chat_id)
-            new_token = await refresh_token(chat_id)
+            new_token = await refresh_token(chat_id, user_tokens)
             if new_token:
                 headers["Authorization"] = f"Bearer {new_token}"
                 response = await client.get(f"{BASE_URL}/api/periods/", headers=headers)
