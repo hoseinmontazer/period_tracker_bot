@@ -109,9 +109,18 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                     logger.info(f"Registration response body: {response_text}")
                     
                     if response.status == 201:
-                        await update.message.reply_text("Registration successful! Please login.")
-                        context.user_data.clear()
-                        return LOGIN
+                        await update.message.reply_text("Registration successful!")
+                        # Auto-login the user
+                        token = await authenticate_user(context.user_data['username'], context.user_data['password'])
+                        if token:
+                            chat_id = str(update.message.chat_id)
+                            user_tokens[chat_id] = {"access": token}
+                            save_tokens(user_tokens)
+                            context.user_data.clear()
+                            return await show_main_menu(update)
+                        else:
+                            await update.message.reply_text("Registration successful but login failed. Please use /start to login.")
+                            return ConversationHandler.END
                     else:
                         error_msg = f"Registration failed. Server response: {response_text}"
                         logger.error(error_msg)
