@@ -54,12 +54,20 @@ async def show_main_menu(update: Update) -> int:
     )
     return MENU
 
-async def register(update: Update, context: CallbackContext) -> int:
-    """Start the registration process."""
-    # Clear any existing registration data
-    context.user_data.clear()
-    await update.message.reply_text("Please enter your username:")
-    context.user_data['registration_step'] = 'username'
+async def handle_initial_choice(update: Update, context: CallbackContext) -> int:
+    """Handle the initial Register/Login choice."""
+    choice = update.message.text
+    
+    if choice == 'Register':
+        # Clear any existing registration data
+        context.user_data.clear()
+        await update.message.reply_text("Please enter your username:")
+        context.user_data['registration_step'] = 'username'
+        return REGISTER
+    elif choice == 'Login':
+        await update.message.reply_text("Please enter your username:")
+        return LOGIN
+    
     return REGISTER
 
 async def handle_registration(update: Update, context: CallbackContext) -> int:
@@ -193,7 +201,10 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            REGISTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_registration)],
+            REGISTER: [
+                MessageHandler(filters.Regex('^(Register|Login)$'), handle_initial_choice),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_registration)
+            ],
             LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, login)],
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
             MENU: [
