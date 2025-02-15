@@ -34,6 +34,10 @@ async def fetch_periods(update, context):
                 await update.message.reply_text(get_message(lang, 'errors', 'no_history'))
                 return
             
+            # Add RTL mark for Persian
+            rtl_mark = '\u200F' if lang == 'fa' else ''
+            ltr_mark = '\u200E' if lang == 'fa' else ''
+            
             formatted_periods = f"{get_message(lang, 'period_history', 'title')}\n\n"
             
             for idx, period in enumerate(sorted(periods, key=lambda x: x["start_date"], reverse=True), start=1):
@@ -41,16 +45,24 @@ async def fetch_periods(update, context):
                 end_date = period["end_date"]
                 predicted_end_date = period.get("predicted_end_date")
                 
+                # Format symptoms and medications for RTL if in Persian
+                symptoms = period['symptoms'] or get_message(lang, 'period_history', 'none_noted')
+                medications = period['medication'] or get_message(lang, 'period_history', 'none_taken')
+                
+                if lang == 'fa':
+                    symptoms = f"{rtl_mark}{symptoms}"
+                    medications = f"{rtl_mark}{medications}"
+                
                 formatted_periods += (
-                    f"{get_message(lang, 'period_history', 'cycle', idx)}\n"
+                    f"{rtl_mark}{get_message(lang, 'period_history', 'cycle', idx)}\n"
                     f"┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n\n"
-                    f"🗓 *{start_date}* → *{end_date}*\n"
-                    f"{get_message(lang, 'period_history', 'predicted')}: *{predicted_end_date}*\n"
-                    f"{get_message(lang, 'period_history', 'duration')}: *{calculate_duration(start_date, end_date, lang)}{get_message(lang, 'period_history', 'days')}*\n\n"
-                    f"{get_message(lang, 'period_history', 'symptoms_title')}\n"
-                    f"• {period['symptoms'] or get_message(lang, 'period_history', 'none_noted')}\n\n"
-                    f"{get_message(lang, 'period_history', 'medicine_title')}\n"
-                    f"• {period['medication'] or get_message(lang, 'period_history', 'none_taken')}\n\n"
+                    f"{rtl_mark}🗓 {ltr_mark}*{start_date}* → *{end_date}*\n"
+                    f"{rtl_mark}{get_message(lang, 'period_history', 'predicted')}: {ltr_mark}*{predicted_end_date}*\n"
+                    f"{rtl_mark}{get_message(lang, 'period_history', 'duration')}: {ltr_mark}*{calculate_duration(start_date, end_date, lang)}*{rtl_mark}{get_message(lang, 'period_history', 'days')}\n\n"
+                    f"{rtl_mark}{get_message(lang, 'period_history', 'symptoms_title')}\n"
+                    f"{rtl_mark}• {symptoms}\n\n"
+                    f"{rtl_mark}{get_message(lang, 'period_history', 'medicine_title')}\n"
+                    f"{rtl_mark}• {medications}\n\n"
                     f"•°•°•°•°•°•°•°•°•°\n\n"
                 )
 
