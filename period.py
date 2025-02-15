@@ -2,7 +2,7 @@ import httpx
 from utils import load_tokens
 from config import BASE_URL
 from datetime import datetime
-from languages import get_message
+from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 
 def translate_items(items_str: str, lang: str) -> str:
     """Translate symptoms or medications from English to the target language"""
