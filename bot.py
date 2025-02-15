@@ -88,15 +88,24 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                     're_password': password,
                     'email': context.user_data['email']
                 }
+                logger.info(f"Attempting registration with data: {data}")
+                
                 async with session.post('https://api-period.shirpala.ir/api/auth/users/', data=data) as response:
+                    response_text = await response.text()
+                    logger.info(f"Registration response status: {response.status}")
+                    logger.info(f"Registration response body: {response_text}")
+                    
                     if response.status == 201:
                         await update.message.reply_text("Registration successful! Please login.")
                     else:
-                        await update.message.reply_text("Registration failed. Please try again.")
+                        error_msg = f"Registration failed. Status: {response.status}, Response: {response_text}"
+                        logger.error(error_msg)
+                        await update.message.reply_text(f"Registration failed. Server response: {response_text}")
                         return REGISTER
         except Exception as e:
-            logger.error(f"Registration error: {e}")
-            await update.message.reply_text("An error occurred during registration. Please try again.")
+            error_msg = f"Registration error: {str(e)}"
+            logger.error(error_msg)
+            await update.message.reply_text(f"An error occurred during registration: {str(e)}")
             return REGISTER
 
         # Clear registration data
