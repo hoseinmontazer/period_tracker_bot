@@ -182,15 +182,14 @@ async def logout(update: Update, context: CallbackContext) -> int:
 async def view_history(update: Update, context: CallbackContext) -> int:
     """Handle 'View History' - Fetch and display periods."""
     chat_id = str(update.message.chat_id)
-
-    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
-        await update.message.reply_text("⚠️ You need to log in first. Use /start.")
+    if chat_id in user_tokens and "access" in user_tokens[chat_id]:
+        access_token = user_tokens[chat_id]["access"]
+        await fetch_periods(update, context)
         return MENU
-
-    access_token = user_tokens[chat_id]["access"]
-    await fetch_periods(update, access_token)
-
-    return MENU  # Return to menu after displaying history
+    else:
+        lang = context.user_data.get('language', 'en')
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+        return REGISTER
 
 async def cycle_analysis_handler(update: Update, context: CallbackContext) -> int:
     """Handle 'Cycle Analysis' - Fetch and display cycle analysis."""

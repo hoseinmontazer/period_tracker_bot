@@ -4,8 +4,9 @@ from config import BASE_URL
 from datetime import datetime
 from languages import get_message
 
-async def fetch_periods(update, access_token):
-    lang = update.message.chat_data.get('language', 'en')
+async def fetch_periods(update, context):
+    """Fetch and display period history"""
+    lang = context.user_data.get('language', 'en')
     headers = {"Authorization": f"Bearer {access_token}"}
     print(f"Using access token in periods: {access_token}")
    
@@ -38,7 +39,7 @@ async def fetch_periods(update, access_token):
                     f"┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n\n"
                     f"🗓 *{start_date}* → *{end_date}*\n"
                     f"{get_message(lang, 'period_history', 'predicted')}: *{predicted_end_date}*\n"
-                    f"{get_message(lang, 'period_history', 'duration')}: *{calculate_duration(start_date, end_date)}{get_message(lang, 'period_history', 'days')}*\n\n"
+                    f"{get_message(lang, 'period_history', 'duration')}: *{calculate_duration(start_date, end_date, lang)}{get_message(lang, 'period_history', 'days')}*\n\n"
                     f"{get_message(lang, 'period_history', 'symptoms_title')}\n"
                     f"• {period['symptoms'] or get_message(lang, 'period_history', 'none_noted')}\n\n"
                     f"{get_message(lang, 'period_history', 'medicine_title')}\n"
@@ -50,10 +51,10 @@ async def fetch_periods(update, access_token):
         else:
             await update.message.reply_text(get_message(lang, 'errors', 'fetch_failed'))
 
-def calculate_duration(start_date, end_date):
+def calculate_duration(start_date, end_date, lang):
     """Calculate the duration between start and end date"""
     if not start_date or not end_date:
-        return get_message(update.message.chat_data.get('language', 'en'), 'errors', 'unknown_duration')
+        return get_message(lang, 'errors', 'unknown_duration')
     start = datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.strptime(end_date, "%Y-%m-%d")
     return (end - start).days + 1
