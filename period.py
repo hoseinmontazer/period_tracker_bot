@@ -4,6 +4,35 @@ from config import BASE_URL
 from datetime import datetime
 from languages import get_message
 
+def translate_items(items_str: str, lang: str) -> str:
+    """Translate symptoms or medications from English to the target language"""
+    if not items_str or lang == 'en':
+        return items_str
+        
+    # Create translation dictionaries from SYMPTOM_OPTIONS and MEDICATION_OPTIONS
+    translations = {}
+    
+    # Add symptom translations
+    for en_list, fa_list in zip(SYMPTOM_OPTIONS['en'], SYMPTOM_OPTIONS['fa']):
+        for en, fa in zip(en_list, fa_list):
+            if en not in ['Write Custom Symptoms', 'Done']:
+                translations[en] = fa
+                
+    # Add medication translations
+    for en_list, fa_list in zip(MEDICATION_OPTIONS['en'], MEDICATION_OPTIONS['fa']):
+        for en, fa in zip(en_list, fa_list):
+            if en not in ['Write Custom Medication', 'Done']:
+                translations[en] = fa
+    
+    # Split items and translate each one
+    items = [item.strip() for item in items_str.split(',')]
+    translated_items = []
+    
+    for item in items:
+        translated_items.append(translations.get(item, item))  # Use original if no translation
+        
+    return ', '.join(translated_items)
+
 async def fetch_periods(update, context):
     """Fetch and display period history"""
     lang = context.user_data.get('language', 'en')
@@ -45,9 +74,9 @@ async def fetch_periods(update, context):
                 end_date = period["end_date"]
                 predicted_end_date = period.get("predicted_end_date")
                 
-                # Format symptoms and medications for RTL if in Persian
-                symptoms = period['symptoms'] or get_message(lang, 'period_history', 'none_noted')
-                medications = period['medication'] or get_message(lang, 'period_history', 'none_taken')
+                # Translate symptoms and medications
+                symptoms = translate_items(period['symptoms'], lang) if period['symptoms'] else get_message(lang, 'period_history', 'none_noted')
+                medications = translate_items(period['medication'], lang) if period['medication'] else get_message(lang, 'period_history', 'none_taken')
                 
                 if lang == 'fa':
                     symptoms = f"{rtl_mark}{symptoms}"
