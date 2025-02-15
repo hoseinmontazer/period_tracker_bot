@@ -56,28 +56,35 @@ async def show_main_menu(update: Update) -> int:
 
 async def register(update: Update, context: CallbackContext) -> int:
     """Start the registration process."""
-    await update.message.reply_text("Please enter your email:")
+    # Clear any existing registration data
+    context.user_data.clear()
+    await update.message.reply_text("Please enter your email address (e.g., example@gmail.com):")
     context.user_data['registration_step'] = 'email'
     return REGISTER
 
 async def handle_registration(update: Update, context: CallbackContext) -> int:
     """Handle the registration process step by step."""
     current_step = context.user_data.get('registration_step', 'email')
+    user_input = update.message.text
     
     if current_step == 'email':
-        context.user_data['email'] = update.message.text
+        if '@' not in user_input or '.' not in user_input:
+            await update.message.reply_text("Please enter a valid email address (e.g., example@gmail.com):")
+            return REGISTER
+            
+        context.user_data['email'] = user_input
         await update.message.reply_text("Enter your username:")
         context.user_data['registration_step'] = 'username'
         return REGISTER
     
     elif current_step == 'username':
-        context.user_data['username'] = update.message.text
+        context.user_data['username'] = user_input
         await update.message.reply_text("Enter your password:")
         context.user_data['registration_step'] = 'password'
         return REGISTER
     
     elif current_step == 'password':
-        password = update.message.text
+        password = user_input
         
         # Make API call to register user
         try:
