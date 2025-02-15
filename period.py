@@ -1,6 +1,7 @@
 import httpx
 from utils import load_tokens
 from config import BASE_URL
+from datetime import datetime
 
 async def fetch_periods(update, access_token):
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -28,16 +29,30 @@ async def fetch_periods(update, access_token):
             for idx, period in enumerate(sorted(periods, key=lambda x: x["start_date"], reverse=True), start=1):
                 start_date = period["start_date"]
                 end_date = period["end_date"]
+                predicted_end_date = period.get("predicted_end_date")
                 
                 formatted_periods += (
-                    f"🔹 **Cycle {idx}**\n"
-                    f"   📆 Start: *{start_date}*\n"
-                    f"   🛑 End: *{end_date}*\n"
-                    f"   ⚕️ Symptoms: `{period['symptoms'] or 'None'}`\n"
-                    f"   💊 Medication: `{period['medication'] or 'None'}`\n\n"
+                    f"╭──────────── 🌸 Cycle {idx} 🌸 ────────────╮\n\n"
+                    f"   📅 Start Date:        *{start_date}*\n"
+                    f"   🔚 End Date:          *{end_date}*\n"
+                    f"   🔮 Predicted End:     *{predicted_end_date}*\n\n"
+                    f"   🎯 Duration:          *{calculate_duration(start_date, end_date)} days*\n\n"
+                    f"   ⚕️ Symptoms:\n"
+                    f"   └─ `{period['symptoms'] or 'None recorded'}`\n\n"
+                    f"   💊 Medication:\n"
+                    f"   └─ `{period['medication'] or 'None recorded'}`\n"
+                    f"╰────────────────────────────────────╯\n\n"
                 )
 
             await update.message.reply_text(formatted_periods, parse_mode="Markdown")
         else:
             await update.message.reply_text("❌ Failed to retrieve history. Please try again later.")
+
+def calculate_duration(start_date, end_date):
+    """Calculate the duration between start and end date"""
+    if not start_date or not end_date:
+        return "?"
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    return (end - start).days + 1
 
