@@ -10,8 +10,9 @@ from cycle_analysis import fetch_cycle_analysis
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
-from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU
+from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, LANGUAGE_SELECT
 import aiohttp
+from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 
 # Logging setup
 logging.basicConfig(
@@ -31,24 +32,29 @@ async def start(update: Update, context: CallbackContext) -> int:
     chat_id = str(update.message.chat_id)
 
     if chat_id in user_tokens and "access" in user_tokens[chat_id]:
-        return await show_main_menu(update)
+        context.user_data['language'] = context.user_data.get('language', 'en')
+        return await show_main_menu(update, context)
 
-    reply_keyboard = [['Register', 'Login']]
+    # Language selection keyboard
+    reply_keyboard = [['English 🇬🇧', 'فارسی 🇮🇷']]
     await update.message.reply_text(
-        "Welcome to Period Tracker Bot! Please choose an option:",
+        get_message('en', 'welcome', 'initial'),
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
     )
-    return REGISTER
+    return LANGUAGE_SELECT
 
-async def show_main_menu(update: Update) -> int:
+async def show_main_menu(update: Update, context: CallbackContext) -> int:
     """Displays the main menu with available options."""
+    lang = context.user_data.get('language', 'en')
+    
     reply_keyboard = [
-        ['Track Period', 'View History'],
-        ['Cycle Analysis', 'Add New Cycle'],
-        ['Logout']
+        [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
+        [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
+        [get_message(lang, 'menu', 'logout')]
     ]
+
     await update.message.reply_text(
-        "📋 **Main Menu**\nChoose an option:",
+        get_message(lang, 'menu', 'main'),
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
         parse_mode="Markdown"
     )
@@ -117,7 +123,7 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                             user_tokens[chat_id] = {"access": token}
                             save_tokens(user_tokens)
                             context.user_data.clear()
-                            return await show_main_menu(update)
+                            return await show_main_menu(update, context)
                         else:
                             await update.message.reply_text("Registration successful but login failed. Please use /start to login.")
                             return ConversationHandler.END
@@ -150,7 +156,7 @@ async def authenticate(update: Update, context: CallbackContext) -> int:
     if token:
         user_tokens[chat_id] = {"access": token}
         save_tokens(user_tokens)
-        return await show_main_menu(update)
+        return await show_main_menu(update, context)
 
     await update.message.reply_text("❌ Login failed. Please try again.")
     return REGISTER

@@ -7,36 +7,23 @@ import httpx
 from config import BASE_URL
 from states import MENU, START_DATE, SYMPTOMS, MEDICATION
 from calendar_keyboard import CalendarKeyboard
+from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 
 calendar = CalendarKeyboard()
 
-# Predefined symptom options
-SYMPTOM_OPTIONS = [
-    ['Cramps', 'Headache', 'Fatigue'],
-    ['Bloating', 'Mood Swings', 'Acne'],
-    ['Back Pain', 'Breast Tenderness'],
-    ['Write Custom Symptoms', 'Done']
-]
-
-# Predefined medication options
-MEDICATION_OPTIONS = [
-    ['Ibuprofen', 'Acetaminophen'],
-    ['Birth Control Pills', 'Pain Relievers'],
-    ['Write Custom Medication', 'Done']
-]
-
 async def start_add_cycle(update, context):
     chat_id = str(update.message.chat_id)
+    lang = context.user_data.get('language', 'en')
     
     # First check if user is authenticated
     from bot import user_tokens
     if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
-        await update.message.reply_text("⚠️ You need to log in first. Use /start to login.")
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return ConversationHandler.END
     
     # Show calendar for start date selection
     await update.message.reply_text(
-        "Please select the start date:",
+        get_message(lang, 'cycle', 'select_date'),
         reply_markup=calendar.create_calendar()
     )
     return START_DATE
