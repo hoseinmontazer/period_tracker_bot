@@ -42,6 +42,24 @@ EN = {
         'cancel': "Cancel",
         'write_custom_symptoms': "Write Custom Symptoms",
         'write_custom_medication': "Write Custom Medication"
+    },
+    'errors': {
+        'token_expired': "Token has expired. Please try again.",
+        'no_history': "ℹ️ You have no recorded period history.",
+        'fetch_failed': "❌ Failed to retrieve history. Please try again later.",
+        'unknown_duration': "?",
+        'operation_cancelled': "Operation cancelled."
+    },
+    'period_history': {
+        'title': "📅 **Your Period History**:",
+        'cycle': "✨ *Cycle {}* ✨",
+        'predicted': "🔮 Predicted",
+        'duration': "⏳ Duration",
+        'symptoms_title': "💫 *Symptoms*",
+        'medicine_title': "💊 *Medicine*",
+        'none_noted': "None noted",
+        'none_taken': "None taken",
+        'days': "d"  # for days abbreviation
     }
 }
 
@@ -89,6 +107,24 @@ FA = {
         'cancel': "لغو",
         'write_custom_symptoms': "نوشتن علائم سفارشی",
         'write_custom_medication': "نوشتن داروی سفارشی"
+    },
+    'errors': {
+        'token_expired': "توکن منقضی شده است. لطفا دوباره تلاش کنید.",
+        'no_history': "ℹ️ شما هیچ سابقه دوره‌ای ثبت شده‌ای ندارید.",
+        'fetch_failed': "❌ دریافت تاریخچه ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
+        'unknown_duration': "؟",
+        'operation_cancelled': "عملیات لغو شد."
+    },
+    'period_history': {
+        'title': "📅 **تاریخچه دوره شما**:",
+        'cycle': "✨ *دوره {}* ✨",
+        'predicted': "🔮 پیش‌بینی شده",
+        'duration': "⏳ مدت",
+        'symptoms_title': "💫 *علائم*",
+        'medicine_title': "💊 *دارو*",
+        'none_noted': "هیچ علامتی ثبت نشده",
+        'none_taken': "هیچ دارویی مصرف نشده",
+        'days': "روز"
     }
 }
 

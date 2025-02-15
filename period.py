@@ -2,8 +2,10 @@ import httpx
 from utils import load_tokens
 from config import BASE_URL
 from datetime import datetime
+from languages import get_message
 
 async def fetch_periods(update, access_token):
+    lang = update.message.chat_data.get('language', 'en')
     headers = {"Authorization": f"Bearer {access_token}"}
     print(f"Using access token in periods: {access_token}")
    
@@ -21,10 +23,10 @@ async def fetch_periods(update, access_token):
             periods = response.json()
             
             if not periods:
-                await update.message.reply_text("ℹ️ You have no recorded period history.")
+                await update.message.reply_text(get_message(lang, 'errors', 'no_history'))
                 return
             
-            formatted_periods = "📅 **Your Period History**:\n\n"
+            formatted_periods = f"{get_message(lang, 'period_history', 'title')}\n\n"
             
             for idx, period in enumerate(sorted(periods, key=lambda x: x["start_date"], reverse=True), start=1):
                 start_date = period["start_date"]
@@ -32,26 +34,26 @@ async def fetch_periods(update, access_token):
                 predicted_end_date = period.get("predicted_end_date")
                 
                 formatted_periods += (
-                    f"✨ *Cycle {idx}* ✨\n"
+                    f"{get_message(lang, 'period_history', 'cycle', idx)}\n"
                     f"┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n\n"
                     f"🗓 *{start_date}* → *{end_date}*\n"
-                    f"🔮 Predicted: *{predicted_end_date}*\n"
-                    f"⏳ Duration: *{calculate_duration(start_date, end_date)}d*\n\n"
-                    f"💫 *Symptoms*\n"
-                    f"• {period['symptoms'] or 'None noted'}\n\n"
-                    f"💊 *Medicine*\n"
-                    f"• {period['medication'] or 'None taken'}\n\n"
+                    f"{get_message(lang, 'period_history', 'predicted')}: *{predicted_end_date}*\n"
+                    f"{get_message(lang, 'period_history', 'duration')}: *{calculate_duration(start_date, end_date)}{get_message(lang, 'period_history', 'days')}*\n\n"
+                    f"{get_message(lang, 'period_history', 'symptoms_title')}\n"
+                    f"• {period['symptoms'] or get_message(lang, 'period_history', 'none_noted')}\n\n"
+                    f"{get_message(lang, 'period_history', 'medicine_title')}\n"
+                    f"• {period['medication'] or get_message(lang, 'period_history', 'none_taken')}\n\n"
                     f"•°•°•°•°•°•°•°•°•°\n\n"
                 )
 
             await update.message.reply_text(formatted_periods, parse_mode="Markdown")
         else:
-            await update.message.reply_text("❌ Failed to retrieve history. Please try again later.")
+            await update.message.reply_text(get_message(lang, 'errors', 'fetch_failed'))
 
 def calculate_duration(start_date, end_date):
     """Calculate the duration between start and end date"""
     if not start_date or not end_date:
-        return "?"
+        return get_message(update.message.chat_data.get('language', 'en'), 'errors', 'unknown_duration')
     start = datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.strptime(end_date, "%Y-%m-%d")
     return (end - start).days + 1
