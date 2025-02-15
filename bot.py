@@ -11,6 +11,7 @@ from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
 from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU
+import aiohttp
 
 # Logging setup
 logging.basicConfig(
@@ -54,9 +55,53 @@ async def show_main_menu(update: Update) -> int:
     return MENU
 
 async def register(update: Update, context: CallbackContext) -> int:
-    """Handle user registration."""
-    await update.message.reply_text("Enter your username:")
-    return LOGIN
+    """Start the registration process."""
+    await update.message.reply_text("Please enter your email:")
+    context.user_data['registration_step'] = 'email'
+    return REGISTER
+
+async def handle_registration(update: Update, context: CallbackContext) -> int:
+    """Handle the registration process step by step."""
+    current_step = context.user_data.get('registration_step', 'email')
+    
+    if current_step == 'email':
+        context.user_data['email'] = update.message.text
+        await update.message.reply_text("Enter your username:")
+        context.user_data['registration_step'] = 'username'
+        return REGISTER
+    
+    elif current_step == 'username':
+        context.user_data['username'] = update.message.text
+        await update.message.reply_text("Enter your password:")
+        context.user_data['registration_step'] = 'password'
+        return REGISTER
+    
+    elif current_step == 'password':
+        password = update.message.text
+        
+        # Make API call to register user
+        try:
+            async with aiohttp.ClientSession() as session:
+                data = {
+                    'username': context.user_data['username'],
+                    'password': password,
+                    're_password': password,
+                    'email': context.user_data['email']
+                }
+                async with session.post('https://api-period.shirpala.ir/api/auth/users/', data=data) as response:
+                    if response.status == 201:
+                        await update.message.reply_text("Registration successful! Please login.")
+                    else:
+                        await update.message.reply_text("Registration failed. Please try again.")
+                        return REGISTER
+        except Exception as e:
+            logger.error(f"Registration error: {e}")
+            await update.message.reply_text("An error occurred during registration. Please try again.")
+            return REGISTER
+
+        # Clear registration data
+        context.user_data.clear()
+        return LOGIN
 
 async def login(update: Update, context: CallbackContext) -> int:
     """Handle user login."""
@@ -135,7 +180,7 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            REGISTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, register)],
+            REGISTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_registration)],
             LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, login)],
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
             MENU: [
