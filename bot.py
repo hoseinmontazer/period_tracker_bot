@@ -58,42 +58,40 @@ async def register(update: Update, context: CallbackContext) -> int:
     """Start the registration process."""
     # Clear any existing registration data
     context.user_data.clear()
-    await update.message.reply_text("Please enter your email address (e.g., example@gmail.com):")
-    context.user_data['registration_step'] = 'email'
+    await update.message.reply_text("Please enter your username:")
+    context.user_data['registration_step'] = 'username'
     return REGISTER
 
 async def handle_registration(update: Update, context: CallbackContext) -> int:
     """Handle the registration process step by step."""
-    current_step = context.user_data.get('registration_step', 'email')
+    current_step = context.user_data.get('registration_step', 'username')
     user_input = update.message.text
     
-    if current_step == 'email':
-        if '@' not in user_input or '.' not in user_input:
-            await update.message.reply_text("Please enter a valid email address (e.g., example@gmail.com):")
-            return REGISTER
-            
-        context.user_data['email'] = user_input
-        await update.message.reply_text("Enter your username:")
-        context.user_data['registration_step'] = 'username'
-        return REGISTER
-    
-    elif current_step == 'username':
+    if current_step == 'username':
         context.user_data['username'] = user_input
         await update.message.reply_text("Enter your password:")
         context.user_data['registration_step'] = 'password'
         return REGISTER
     
     elif current_step == 'password':
-        password = user_input
-        
+        context.user_data['password'] = user_input
+        await update.message.reply_text("Enter your email address (e.g., example@gmail.com):")
+        context.user_data['registration_step'] = 'email'
+        return REGISTER
+    
+    elif current_step == 'email':
+        if '@' not in user_input or '.' not in user_input:
+            await update.message.reply_text("Please enter a valid email address (e.g., example@gmail.com):")
+            return REGISTER
+            
         # Make API call to register user
         try:
             async with aiohttp.ClientSession() as session:
                 data = {
                     'username': context.user_data['username'],
-                    'password': password,
-                    're_password': password,
-                    'email': context.user_data['email']
+                    'password': context.user_data['password'],
+                    're_password': context.user_data['password'],
+                    'email': user_input
                 }
                 logger.info(f"Attempting registration with data: {data}")
                 
