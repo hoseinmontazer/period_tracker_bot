@@ -30,18 +30,22 @@ __all__ = ['MENU', 'show_main_menu']
 async def start(update: Update, context: CallbackContext) -> int:
     """Start the bot and check if the user is logged in."""
     chat_id = str(update.message.chat_id)
+    context.user_data['language'] = context.user_data.get('language', 'en')  # Default to English
 
     if chat_id in user_tokens and "access" in user_tokens[chat_id]:
-        context.user_data['language'] = context.user_data.get('language', 'en')
         return await show_main_menu(update, context)
 
-    # Language selection keyboard
-    reply_keyboard = [['English 🇬🇧', 'فارسی 🇮🇷']]
+    # Show login/register options
+    lang = context.user_data.get('language', 'en')
+    reply_keyboard = [
+        [get_message(lang, 'auth', 'register'), get_message(lang, 'auth', 'login')]
+    ]
+    
     await update.message.reply_text(
-        get_message('en', 'welcome', 'initial'),
+        get_message(lang, 'welcome', 'bot'),
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
     )
-    return LANGUAGE_SELECT
+    return REGISTER
 
 async def show_main_menu(update: Update, context: CallbackContext) -> int:
     """Displays the main menu with available options."""
@@ -50,6 +54,7 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
+        ['🇬🇧 English' if lang == 'fa' else '🇮🇷 فارسی'],  # Language toggle button
         [get_message(lang, 'menu', 'logout')]
     ]
 
@@ -205,6 +210,32 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Operation cancelled.")
     return ConversationHandler.END
 
+async def handle_menu(update: Update, context: CallbackContext) -> int:
+    """Handle menu selections."""
+    text = update.message.text
+    lang = context.user_data.get('language', 'en')
+
+    # Handle language change
+    if text in ['🇬🇧 English', '🇮🇷 فارسی']:
+        # Toggle language
+        new_lang = 'en' if text == '🇬🇧 English' else 'fa'
+        context.user_data['language'] = new_lang
+        return await show_main_menu(update, context)
+
+    # Handle other menu options
+    if text == get_message(lang, 'menu', 'track_period'):
+        return await view_history(update, context)
+    elif text == get_message(lang, 'menu', 'view_history'):
+        return await view_history(update, context)
+    elif text == get_message(lang, 'menu', 'cycle_analysis'):
+        return await cycle_analysis_handler(update, context)
+    elif text == get_message(lang, 'menu', 'add_new_cycle'):
+        return await start_add_cycle(update, context)
+    elif text == get_message(lang, 'menu', 'logout'):
+        return await logout(update, context)
+
+    return MENU
+
 def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
@@ -217,17 +248,17 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={
             REGISTER: [
-                MessageHandler(filters.Regex('^(Register|Login)$'), handle_initial_choice),
+                MessageHandler(
+                    filters.Regex(f'^({get_message("en", "auth", "register")}|{get_message("fa", "auth", "register")}|'
+                                f'{get_message("en", "auth", "login")}|{get_message("fa", "auth", "login")})$'),
+                    handle_initial_choice
+                ),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_registration)
             ],
             LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, login)],
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
             MENU: [
-                MessageHandler(filters.Regex("^Track Period$"), view_history),
-                MessageHandler(filters.Regex("^View History$"), view_history),
-                MessageHandler(filters.Regex("^Cycle Analysis$"), cycle_analysis_handler),
-                MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle),
-                MessageHandler(filters.Regex("^Logout$"), logout),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)],

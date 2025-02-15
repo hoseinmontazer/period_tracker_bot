@@ -10,7 +10,8 @@ EN = {
         'view_history': "View History",
         'cycle_analysis': "Cycle Analysis",
         'add_new_cycle': "Add New Cycle",
-        'logout': "Logout"
+        'logout': "Logout",
+        'language_changed': "Language changed to English"
     },
     'auth': {
         'login_required': "⚠️ You need to log in first. Use /start.",
@@ -56,7 +57,8 @@ FA = {
         'view_history': "مشاهده تاریخچه",
         'cycle_analysis': "تحلیل دوره",
         'add_new_cycle': "افزودن دوره جدید",
-        'logout': "خروج"
+        'logout': "خروج",
+        'language_changed': "زبان به فارسی تغییر کرد"
     },
     'auth': {
         'login_required': "⚠️ ابتدا باید وارد شوید. از /start استفاده کنید.",
