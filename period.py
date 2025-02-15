@@ -32,16 +32,16 @@ async def fetch_periods(update, access_token):
                 predicted_end_date = period.get("predicted_end_date")
                 
                 formatted_periods += (
-                    f"╭──────────── 🌸 Cycle {idx} 🌸 ────────────╮\n\n"
-                    f"   📅 Start Date:        *{start_date}*\n"
-                    f"   🔚 End Date:          *{end_date}*\n"
-                    f"   🔮 Predicted End:     *{predicted_end_date}*\n\n"
-                    f"   🎯 Duration:          *{calculate_duration(start_date, end_date)} days*\n\n"
-                    f"   ⚕️ Symptoms:\n"
-                    f"   └─ `{period['symptoms'] or 'None recorded'}`\n\n"
-                    f"   💊 Medication:\n"
-                    f"   └─ `{period['medication'] or 'None recorded'}`\n"
-                    f"╰────────────────────────────────────╯\n\n"
+                    f"✨ *Cycle {idx}* ✨\n"
+                    f"┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n\n"
+                    f"🗓 *{start_date}* → *{end_date}*\n"
+                    f"🔮 Predicted: *{predicted_end_date}*\n"
+                    f"⏳ Duration: *{calculate_duration(start_date, end_date)}d*\n\n"
+                    f"💫 *Symptoms*\n"
+                    f"• {period['symptoms'] or 'None noted'}\n\n"
+                    f"💊 *Medicine*\n"
+                    f"• {period['medication'] or 'None taken'}\n\n"
+                    f"•°•°•°•°•°•°•°•°•°\n\n"
                 )
 
             await update.message.reply_text(formatted_periods, parse_mode="Markdown")
