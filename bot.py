@@ -102,20 +102,19 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                     
                     if response.status == 201:
                         await update.message.reply_text("Registration successful! Please login.")
+                        context.user_data.clear()
+                        return LOGIN
                     else:
-                        error_msg = f"Registration failed. Status: {response.status}, Response: {response_text}"
+                        error_msg = f"Registration failed. Server response: {response_text}"
                         logger.error(error_msg)
-                        await update.message.reply_text(f"Registration failed. Server response: {response_text}")
+                        await update.message.reply_text(error_msg)
                         return REGISTER
+                    
         except Exception as e:
             error_msg = f"Registration error: {str(e)}"
             logger.error(error_msg)
-            await update.message.reply_text(f"An error occurred during registration: {str(e)}")
+            await update.message.reply_text("An error occurred during registration. Please try again.")
             return REGISTER
-
-        # Clear registration data
-        context.user_data.clear()
-        return LOGIN
 
 async def login(update: Update, context: CallbackContext) -> int:
     """Handle user login."""
