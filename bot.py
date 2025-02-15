@@ -10,7 +10,7 @@ from cycle_analysis import fetch_cycle_analysis
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
-from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, LANGUAGE_SELECT
+from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU
 import aiohttp
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 
