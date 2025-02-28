@@ -10,6 +10,7 @@ from calendar_keyboard import CalendarKeyboard
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 import logging
 from datetime import datetime
+import calendar
 
 logging.basicConfig(
     level=logging.INFO,
@@ -306,7 +307,44 @@ class CalendarKeyboard:
         print(f"Creating calendar for {year}-{month}")
         logger.info(f"Creating calendar for {year}-{month}")
         
-        # ... rest of the create_calendar code ...
+        keyboard = []
+        
+        # First row - Month and Year
+        months = ["January", "February", "March", "April", "May", "June",
+                 "July", "August", "September", "October", "November", "December"]
+        row = [InlineKeyboardButton(f"{months[month-1]} {year}", callback_data="ignore")]
+        keyboard.append(row)
+        
+        # Second row - Days of week
+        row = []
+        for day in ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]:
+            row.append(InlineKeyboardButton(day, callback_data="ignore"))
+        keyboard.append(row)
+
+        # Calendar days
+        month_calendar = calendar.monthcalendar(year, month)
+        for week in month_calendar:
+            row = []
+            for day in week:
+                if day == 0:
+                    row.append(InlineKeyboardButton(" ", callback_data="ignore"))
+                else:
+                    date_str = f"{year:04d}-{month:02d}-{day:02d}"
+                    row.append(InlineKeyboardButton(str(day), callback_data=f"date_{date_str}"))
+            keyboard.append(row)
+        
+        # Navigation buttons
+        nav_row = []
+        prev_month = month - 1 if month > 1 else 12
+        prev_year = year if month > 1 else year - 1
+        next_month = month + 1 if month < 12 else 1
+        next_year = year if month < 12 else year + 1
+        
+        nav_row.extend([
+            InlineKeyboardButton("<<", callback_data=f"prev_{prev_year}_{prev_month}"),
+            InlineKeyboardButton(">>", callback_data=f"next_{next_year}_{next_month}")
+        ])
+        keyboard.append(nav_row)
         
         print("Calendar creation complete")
         return InlineKeyboardMarkup(keyboard)
