@@ -264,30 +264,12 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     
     return MENU
 
-async def calendar_callback(update: Update, context: CallbackContext):
-    query = update.callback_query
-    result = calendar.process_calendar_selection(query)
-    
-    if isinstance(result, tuple):
-        # Navigation action
-        _, markup = result
-        await query.message.edit_reply_markup(reply_markup=markup)
-    elif result:
-        # Date selected
-        await query.message.reply_text(f"You selected: {result}")
-        # Handle the date selection
-    
-    await query.answer()
-
 def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
     # Add the add_cycle_conversation handler FIRST
     application.add_handler(add_cycle_conversation)
-
-    # Add calendar callback handler
-    application.add_handler(CallbackQueryHandler(calendar_callback))
 
     # Then add the main conversation handler
     conv_handler = ConversationHandler(
