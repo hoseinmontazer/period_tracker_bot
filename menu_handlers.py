@@ -27,7 +27,7 @@ async def start(update: Update, context: CallbackContext) -> int:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{BASE_URL}/api/users/me/",
+                    f"{BASE_URL}api/user/profile/",
                     headers={"Authorization": f"Bearer {user_tokens[chat_id]['access']}"}
                 )
                 
