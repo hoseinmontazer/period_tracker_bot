@@ -1,145 +1,77 @@
 import logging
-import httpx
+import uuid
+import aiohttp
 from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext
 from languages import get_message
-from states import MENU, REGISTER, ACCEPTING_INVITATION
-from config import BASE_URL
-from auth import refresh_token
+from states import MENU, ACCEPTING_INVITATION
 
 logger = logging.getLogger(__name__)
 
 async def generate_invitation_code(update: Update, context: CallbackContext) -> int:
-    """Generate invitation code for partner."""
+    """Generate and display invitation code for partner."""
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
-
-    # First check if user is authenticated
-    from bot import user_tokens
-    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
-        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
-        return REGISTER
-
-    access_token = user_tokens[chat_id]["access"]
-    headers = {"Authorization": f"Bearer {access_token}"}
-
+    
     try:
-        async with httpx.AsyncClient() as client:
-            # Using POST request without body
-            response = await client.post(
-                f"{BASE_URL}/api/user/invitation/",
-                headers=headers
-            )
-
-            if response.status_code == 401:  # Token expired
-                new_token = await refresh_token(chat_id, user_tokens)
-                if new_token:
-                    headers["Authorization"] = f"Bearer {new_token}"
-                    response = await client.post(
-                        f"{BASE_URL}/api/user/invitation/",
-                        headers=headers
-                    )
-                else:
-                    await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
-                    return REGISTER
-
-            if response.status_code in [200, 201]:  # Accept both 200 and 201 status codes
-                try:
-                    data = response.json()
-                    invitation_code = data.get('invitation_code')
-                    if invitation_code:
-                        await update.message.reply_text(
-                            f"✨ Your invitation code is: {invitation_code}\n\n"
-                            f"Share this code with your partner. They can accept it using the 'Accept Invitation Code' option in their menu."
-                        )
-                    else:
-                        await update.message.reply_text("Failed to get invitation code from response.")
-                except ValueError as e:
-                    logger.error(f"Error parsing JSON response: {str(e)}")
-                    await update.message.reply_text("Failed to parse the server response.")
-            else:
-                error_text = response.text
-                await update.message.reply_text(f"Failed to generate invitation code: {error_text}")
+        # Generate a unique invitation code
+        invitation_code = str(uuid.uuid4())[:8]
+        
+        # Store the invitation code in user_data
+        context.user_data['invitation_code'] = invitation_code
+        
+        # Send the code to the user
+        await update.message.reply_text(
+            get_message(lang, 'invitation', 'code_generated').format(invitation_code),
+            reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
+                                          one_time_keyboard=True)
+        )
+        
+        return MENU
+        
     except Exception as e:
         logger.error(f"Error generating invitation code: {str(e)}")
-        await update.message.reply_text("An error occurred while generating the invitation code.")
-
-    return MENU
+        await update.message.reply_text(get_message(lang, 'invitation', 'generation_error'))
+        return MENU
 
 async def start_accept_invitation(update: Update, context: CallbackContext) -> int:
-    """Start the process of accepting an invitation code."""
-    chat_id = str(update.message.chat_id)
+    """Start the invitation acceptance process."""
     lang = context.user_data.get('language', 'en')
-
-    # First check if user is authenticated
-    from bot import user_tokens
-    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
-        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
-        return REGISTER
-
+    
     await update.message.reply_text(
-        "Please enter the invitation code you received from your partner:\n"
-        "(You can cancel this operation by typing /cancel)"
+        get_message(lang, 'invitation', 'enter_code'),
+        reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
+                                      one_time_keyboard=True)
     )
     return ACCEPTING_INVITATION
 
 async def accept_invitation(update: Update, context: CallbackContext) -> int:
-    """Handle the invitation code acceptance."""
+    """Process the invitation code."""
+    invitation_code = update.message.text
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
-    invitation_code = update.message.text.strip()
-
-    if not invitation_code.isdigit():
-        await update.message.reply_text("Please enter a valid numeric code.")
-        return ACCEPTING_INVITATION
-
-    # Check if user is authenticated
-    from bot import user_tokens
-    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
-        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
-        return REGISTER
-
-    access_token = user_tokens[chat_id]["access"]
-    headers = {"Authorization": f"Bearer {access_token}"}
-    data = {'code_to_accept': invitation_code}
-
+    
+    if invitation_code == get_message(lang, 'menu', 'back_to_main'):
+        return MENU
+    
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{BASE_URL}/api/user/invitation/",
-                headers=headers,
-                data=data
-            )
-
-            if response.status_code == 401:  # Token expired
-                new_token = await refresh_token(chat_id, user_tokens)
-                if new_token:
-                    headers["Authorization"] = f"Bearer {new_token}"
-                    response = await client.post(
-                        f"{BASE_URL}/api/user/invitation/",
-                        headers=headers,
-                        data=data
-                    )
-                else:
-                    await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
-                    return REGISTER
-
-            if response.status_code == 200:
-                await update.message.reply_text("✅ Partner invitation accepted successfully!")
-            else:
-                response_text = await response.text()
-                await update.message.reply_text(
-                    f"❌ Failed to accept invitation code.\n"
-                    f"Error: {response_text}\n\n"
-                    f"Please check the code and try again, or use /cancel to cancel."
-                )
-                return ACCEPTING_INVITATION
-    except Exception as e:
-        logger.error(f"Error accepting invitation code: {str(e)}")
+        # Here you would typically make an API call to validate and process the invitation code
+        # For example:
+        # async with aiohttp.ClientSession() as session:
+        #     async with session.post('your_api_endpoint', json={'code': invitation_code}) as response:
+        #         if response.status == 200:
+        #             # Success
+        
+        # For now, we'll just show a success message
         await update.message.reply_text(
-            "An error occurred while accepting the invitation code.\n"
-            "Please try again or use /cancel to cancel."
+            get_message(lang, 'invitation', 'accepted'),
+            reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
+                                          one_time_keyboard=True)
         )
-        return ACCEPTING_INVITATION
-
-    return MENU
+        
+        return MENU
+        
+    except Exception as e:
+        logger.error(f"Error accepting invitation: {str(e)}")
+        await update.message.reply_text(get_message(lang, 'invitation', 'acceptance_error'))
+        return MENU

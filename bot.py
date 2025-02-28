@@ -59,7 +59,7 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
         [get_message(lang, 'menu', 'invitation_partner'), get_message(lang, 'menu', 'accept_invitation')],
-        ['🇬🇧 English' if lang == 'fa' else '🇮🇷 فارسی'],
+        [get_message(lang, 'settings', 'change_language')],
         [get_message(lang, 'menu', 'logout')]
     ]
 

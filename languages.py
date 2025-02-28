@@ -62,6 +62,19 @@ EN = {
         'none_noted': "None noted",
         'none_taken': "None taken",
         'days': "d"  # for days abbreviation
+    },
+    'settings': {
+        'menu': "⚙️ **Settings**\nChoose an option:",
+        'change_language': "🌐 Change Language",
+        'back_to_main': "↩️ Back to Main Menu"
+    },
+    'invitation': {
+        'code_generated': "🎟️ Your invitation code is: `{}`\nShare this code with your partner.",
+        'enter_code': "Please enter the invitation code you received:",
+        'accepted': "✅ Invitation accepted successfully!",
+        'generation_error': "❌ Error generating invitation code. Please try again.",
+        'acceptance_error': "❌ Error accepting invitation. Please check the code and try again.",
+        'invalid_code': "❌ Invalid invitation code. Please try again."
     }
 }
 
@@ -129,6 +142,19 @@ FA = {
         'none_noted': "هیچ علامتی ثبت نشده",
         'none_taken': "هیچ دارویی مصرف نشده",
         'days': "روز"
+    },
+    'settings': {
+        'menu': "⚙️ **تنظیمات**\nیک گزینه را انتخاب کنید:",
+        'change_language': "🌐 تغییر زبان",
+        'back_to_main': "↩️ بازگشت به منوی اصلی"
+    },
+    'invitation': {
+        'code_generated': "��️ کد دعوت شما: `{}`\nاین کد را با شریک خود به اشتراک بگذارید.",
+        'enter_code': "لطفاً کد دعوتی که دریافت کرده‌اید را وارد کنید:",
+        'accepted': "✅ دعوت با موفقیت پذیرفته شد!",
+        'generation_error': "❌ خطا در تولید کد دعوت. لطفاً دوباره تلاش کنید.",
+        'acceptance_error': "❌ خطا در پذیرش دعوت. لطفاً کد را بررسی کرده و دوباره تلاش کنید.",
+        'invalid_code': "❌ کد دعوت نامعتبر است. لطفاً دوباره تلاش کنید."
     }
 }
 
