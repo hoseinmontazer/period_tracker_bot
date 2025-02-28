@@ -35,7 +35,7 @@ from menu_handlers import (
     handle_initial_choice, cancel
 )
 
-# Logging setup
+# Enhanced logging setup
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
     level=logging.INFO
@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 
 # Load user tokens
 user_tokens = load_tokens()
+logger.info("User tokens loaded")
 
 # At the top of the file, add MENU to the exports
 __all__ = ['MENU', 'show_main_menu']
@@ -191,12 +192,18 @@ async def cycle_analysis_handler(update: Update, context: CallbackContext) -> in
 
 def main():
     """Start the Telegram bot."""
+    logger.info("Initializing bot...")
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
+    logger.info("Bot application created")
 
-    # Add the add_cycle_conversation handler FIRST with highest priority
+    # Add handlers with logging
+    logger.info("Adding conversation handlers...")
+    
+    # Add the add_cycle_conversation handler
     application.add_handler(add_cycle_conversation, group=0)
+    logger.info("Added add_cycle_conversation handler")
 
-    # Main conversation handler with lower priority
+    # Main conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -218,34 +225,45 @@ def main():
         allow_reentry=True,
         name="main_conversation"
     )
+    logger.info("Created main conversation handler")
 
-    # Add main conversation handler with lower priority
+    # Add main conversation handler
     application.add_handler(conv_handler, group=1)
+    logger.info("Added main conversation handler")
 
     # Add error handler
     application.add_error_handler(error_handler)
+    logger.info("Added error handler")
     
-    # Add standalone command handlers
+    # Add logout handler
     application.add_handler(CommandHandler('logout', logout))
+    logger.info("Added logout handler")
 
-    logger.info("Bot started")
+    logger.info("Bot initialization complete. Starting polling...")
     application.run_polling()
 
 async def error_handler(update: Update, context: CallbackContext) -> None:
     """Log Errors caused by Updates."""
     logger.error("Exception while handling an update:", exc_info=context.error)
     
-    # Log the error details
     if update:
         if update.message:
             chat_id = update.message.chat_id
             message_text = update.message.text
-            logger.error(f"Error in chat {chat_id}, message: {message_text}")
+            logger.error(f"Error in chat {chat_id}")
+            logger.error(f"Message text: {message_text}")
+            logger.error(f"User data: {context.user_data}")
         elif update.callback_query:
             chat_id = update.callback_query.message.chat_id
             callback_data = update.callback_query.data
-            logger.error(f"Error in chat {chat_id}, callback: {callback_data}")
+            logger.error(f"Error in chat {chat_id}")
+            logger.error(f"Callback data: {callback_data}")
+            logger.error(f"User data: {context.user_data}")
+    
+    # Log the full error traceback
+    logger.exception("Full error traceback:")
 
 if __name__ == "__main__":
+    logger.info("Starting bot application...")
     main()
 

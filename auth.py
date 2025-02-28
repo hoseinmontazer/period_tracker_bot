@@ -41,33 +41,41 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
     current_step = context.user_data.get('registration_step', 'username')
     user_input = update.message.text
     
+    logger.info(f"Registration step: {current_step}, Input: {user_input}")
+    
     if current_step == 'username':
         context.user_data['username'] = user_input
+        logger.info(f"Username set: {user_input}")
         await update.message.reply_text("Enter your password:")
         context.user_data['registration_step'] = 'password'
         return REGISTER
     
     elif current_step == 'password':
         context.user_data['password'] = user_input
+        logger.info("Password received and stored")
         await update.message.reply_text("Enter your email address (e.g., example@gmail.com):")
         context.user_data['registration_step'] = 'email'
         return REGISTER
     
     elif current_step == 'email':
         if '@' not in user_input or '.' not in user_input:
+            logger.warning(f"Invalid email format: {user_input}")
             await update.message.reply_text("Please enter a valid email address (e.g., example@gmail.com):")
             return REGISTER
         
         context.user_data['email'] = user_input
+        logger.info(f"Email set: {user_input}")
         await update.message.reply_text("Please select your sex (male/female):")
         context.user_data['registration_step'] = 'sex'
         return REGISTER
             
     elif current_step == 'sex':
         if user_input.lower() not in ['male', 'female']:
+            logger.warning(f"Invalid sex input: {user_input}")
             await update.message.reply_text("Please enter either 'male' or 'female':")
             return REGISTER
             
+        logger.info(f"Sex set: {user_input}")
         # Make API call to register user
         try:
             async with aiohttp.ClientSession() as session:
@@ -78,7 +86,7 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                     'email': context.user_data['email'],
                     'sex': user_input.lower()
                 }
-                logger.info(f"Attempting registration with data: {data}")
+                logger.info(f"Sending registration request with data: {data}")
                 
                 async with session.post(f'{BASE_URL}/api/auth/users/', data=data) as response:
                     response_text = await response.text()
@@ -86,6 +94,7 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                     logger.info(f"Registration response body: {response_text}")
                     
                     if response.status == 201:
+                        logger.info("Registration successful")
                         await update.message.reply_text("Registration successful!")
                         # Auto-login the user
                         token = await authenticate_user(context.user_data['username'], context.user_data['password'])
@@ -95,8 +104,10 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                             user_tokens[chat_id] = {"access": token}
                             save_tokens(user_tokens)
                             context.user_data.clear()
+                            logger.info(f"Auto-login successful for user: {data['username']}")
                             return await show_main_menu(update, context)
                         else:
+                            logger.error("Auto-login failed after successful registration")
                             await update.message.reply_text("Registration successful but login failed. Please use /start to login.")
                             return ConversationHandler.END
                     else:
