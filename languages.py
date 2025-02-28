@@ -64,8 +64,8 @@ EN = {
         'days': "d"  # for days abbreviation
     },
     'settings': {
-        'menu': "⚙️ **Settings**\nChoose an option:",
-        'change_language': "🌐 Change Language",
+        'menu': "⚙️ Settings",
+        'title': "⚙️ **Settings Menu**\nChoose an option:",
         'back_to_main': "↩️ Back to Main Menu"
     },
     'invitation': {
@@ -144,8 +144,8 @@ FA = {
         'days': "روز"
     },
     'settings': {
-        'menu': "⚙️ **تنظیمات**\nیک گزینه را انتخاب کنید:",
-        'change_language': "🌐 تغییر زبان",
+        'menu': "⚙️ تنظیمات",
+        'title': "⚙️ **منوی تنظیمات**\nیک گزینه را انتخاب کنید:",
         'back_to_main': "↩️ بازگشت به منوی اصلی"
     },
     'invitation': {

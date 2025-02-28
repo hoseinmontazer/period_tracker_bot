@@ -233,7 +233,7 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     lang = context.user_data.get('language', 'en')
     
-    if text == get_message(lang, 'settings', 'change_language'):
+    if text == get_message(lang, 'settings', 'menu'):  # When "Settings" is clicked
         return await show_settings_menu(update, context)
     elif text == get_message(lang, 'menu', 'track_period'):
         return await view_history(update, context)
