@@ -54,6 +54,7 @@ async def start_add_cycle(update, context):
 
 async def handle_calendar_selection(update: Update, context: CallbackContext):
     print("\n=== Calendar Selection Handler Started ===")
+    logger.info("Calendar selection handler triggered")
     query = update.callback_query
     
     if not query:
@@ -62,6 +63,7 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
 
     try:
         print(f"Received callback data: {query.data}")
+        logger.info(f"Received callback data: {query.data}")
         
         # Always answer the callback query first
         await query.answer()
