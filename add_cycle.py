@@ -35,25 +35,19 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
     query = update.callback_query
     if not query:
         return START_DATE
-    
-    await query.answer()
-    
-    if query.data == "ignore":
-        return START_DATE
-    
-    if query.data.startswith(("prev_", "next_")):
-        try:
-            _, year, month = query.data.split("_")
-            year, month = int(year), int(month)
-            markup = calendar.create_calendar(year, month)
+
+    try:
+        await query.answer()
+        result = calendar.process_calendar_selection(query)
+        
+        if isinstance(result, tuple):
+            # Navigation action
+            _, markup = result
             await query.message.edit_reply_markup(reply_markup=markup)
-        except Exception as e:
-            logger.error(f"Error in calendar navigation: {e}")
-        return START_DATE
-    
-    if query.data.startswith("date_"):
-        try:
-            selected_date = query.data.split("_")[1]
+            return START_DATE
+            
+        elif result:  # Date selected
+            selected_date = result
             context.user_data['start_date'] = selected_date
             lang = context.user_data.get('language', 'en')
             
@@ -84,10 +78,9 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
             
             return SYMPTOMS
             
-        except Exception as e:
-            logger.error(f"Error in date selection: {e}")
-            return START_DATE
-    
+    except Exception as e:
+        logger.error(f"Error in calendar selection: {e}")
+        
     return START_DATE
 
 async def handle_symptoms(update: Update, context: CallbackContext):

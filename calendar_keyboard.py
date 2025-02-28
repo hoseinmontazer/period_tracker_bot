@@ -1,6 +1,9 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime, timedelta
 import calendar
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CalendarKeyboard:
     def __init__(self):
@@ -51,8 +54,12 @@ class CalendarKeyboard:
         
         # Navigation buttons
         nav_row = []
+        
+        # Calculate previous month and year
         prev_month = month - 1 if month > 1 else 12
         prev_year = year if month > 1 else year - 1
+        
+        # Calculate next month and year
         next_month = month + 1 if month < 12 else 1
         next_year = year if month < 12 else year + 1
         
@@ -71,11 +78,25 @@ class CalendarKeyboard:
         return InlineKeyboardMarkup(keyboard)
 
     def process_calendar_selection(self, callback_query):
-        data = callback_query.data
-        if data.startswith("date_"):
-            return data.split("_")[1]  # Returns YYYY-MM-DD
-        elif data.startswith(("prev_", "next_")):
-            _, year, month = data.split("_")
-            # Return None to indicate no date was selected, but update the calendar
-            return None, self.create_calendar(int(year), int(month))
+        """
+        Process the callback_query. This method generates a new calendar if forward or
+        backward is pressed. This method should return either a datetime.date object or None
+        """
+        try:
+            data = callback_query.data
+            if data == "ignore":
+                return None
+                
+            elif data.startswith("prev_") or data.startswith("next_"):
+                _, year, month = data.split("_")
+                year, month = int(year), int(month)
+                return None, self.create_calendar(year, month)
+                
+            elif data.startswith("date_"):
+                return data.split("_")[1]
+                
+        except (IndexError, ValueError) as e:
+            logger.error(f"Error processing calendar selection: {e}")
+            return None
+            
         return None 
