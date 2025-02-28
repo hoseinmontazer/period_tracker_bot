@@ -61,7 +61,10 @@ async def handle_symptoms(update, context):
     if 'symptoms' not in context.user_data:
         context.user_data['symptoms'] = []
     
-    if text == 'Done':
+    # Get user's language
+    lang = context.user_data.get('language', 'en')
+    
+    if text == get_message(lang, 'buttons', 'done'):
         # Join all symptoms with commas
         final_symptoms = ", ".join(context.user_data['symptoms']) if context.user_data['symptoms'] else ""
         context.user_data['final_symptoms'] = final_symptoms
@@ -69,10 +72,10 @@ async def handle_symptoms(update, context):
         # Initialize empty medications list
         context.user_data['medications'] = []
         
-        # Move to medication with predefined options
+        # Move to medication with language-specific options
         await update.message.reply_text(
-            "Select your medications (you can select multiple):",
-            reply_markup=ReplyKeyboardMarkup(MEDICATION_OPTIONS, one_time_keyboard=False)
+            get_message(lang, 'cycle', 'select_medications'),
+            reply_markup=ReplyKeyboardMarkup(MEDICATION_OPTIONS[lang], one_time_keyboard=False)
         )
         return MEDICATION
         
