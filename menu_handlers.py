@@ -33,12 +33,13 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     """Display the main menu."""
     lang = context.user_data.get('language', 'en')
     
+    # Create menu buttons with exact text
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), 
          get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), 
          get_message(lang, 'menu', 'add_new_cycle')],
-        [get_message(lang, 'menu', 'partner_menu')],  # Make sure this matches exactly
+        ["👥 Partner Menu" if lang == 'en' else "👥 منوی شریک"],  # Direct text
         [get_message(lang, 'settings', 'menu')]
     ]
 
@@ -58,6 +59,10 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     lang = context.user_data.get('language', 'en')
     
+    # Log the received text and expected partner menu text
+    logger.info(f"Received menu text: '{text}'")
+    logger.info(f"Expected partner menu text: '{get_message(lang, 'menu', 'partner_menu')}'")
+    
     if text == get_message(lang, 'menu', 'add_new_cycle'):
         from add_cycle import start_add_cycle
         return await start_add_cycle(update, context)
@@ -68,7 +73,7 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     elif text == get_message(lang, 'menu', 'cycle_analysis'):
         from cycle_analysis import fetch_cycle_analysis
         return await fetch_cycle_analysis(update, context)
-    elif text == get_message(lang, 'menu', 'partner_menu'):  # Make sure this matches exactly
+    elif text == "👥 Partner Menu" or text == "👥 منوی شریک":  # Direct text comparison
         from partner import show_partner_menu
         return await show_partner_menu(update, context)
     elif text == get_message(lang, 'settings', 'menu'):
@@ -78,15 +83,20 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         from auth import logout
         return await logout(update, context)
     
-    # Log the unhandled menu option
+    # Log unhandled menu option
     logger.warning(f"Unhandled menu option: '{text}'")
-    logger.debug(f"Expected partner_menu text: '{get_message(lang, 'menu', 'partner_menu')}'")
     return MENU
 
 async def handle_initial_choice(update: Update, context: CallbackContext) -> int:
     """Handle the initial Register/Login choice."""
     choice = update.message.text
     lang = context.user_data.get('language', 'en')
+    chat_id = str(update.message.chat_id)
+    
+    # Check if user is already logged in
+    user_tokens = context.bot_data.get('user_tokens', {})
+    if chat_id in user_tokens and "access" in user_tokens[chat_id]:
+        return await show_main_menu(update, context)
     
     if choice == get_message(lang, 'auth', 'register'):
         # Clear any existing registration data
