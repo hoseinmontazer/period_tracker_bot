@@ -17,8 +17,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-calendar = CalendarKeyboard()
-
 async def start_add_cycle(update, context):
     print("\n=== Starting Add Cycle Flow ===")
     logger.info("Starting add cycle process")
@@ -30,7 +28,12 @@ async def start_add_cycle(update, context):
     logger.info(f"User {chat_id} starting add cycle with language {lang}")
     
     # First check if user is authenticated
-    from bot import user_tokens
+    if 'user_tokens' not in context.bot_data:
+        logger.warning(f"User {chat_id} not authenticated")
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+        return ConversationHandler.END
+    
+    user_tokens = context.bot_data['user_tokens']
     if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
         logger.warning(f"User {chat_id} not authenticated")
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
@@ -38,6 +41,7 @@ async def start_add_cycle(update, context):
     
     # Show calendar for start date selection
     print("Creating calendar markup")
+    from bot import calendar  # Import the global calendar instance
     calendar_markup = calendar.create_calendar()
     logger.info("Calendar markup created")
     

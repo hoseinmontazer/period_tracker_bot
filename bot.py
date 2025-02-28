@@ -253,9 +253,8 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     
     if text == get_message(lang, 'menu', 'add_new_cycle'):
         logger.info("User selected Add New Cycle")
-        # End the main conversation
-        await start_add_cycle(update, context)
-        return ConversationHandler.END
+        # Start the add cycle flow
+        return await start_add_cycle(update, context)
     elif text == get_message(lang, 'settings', 'menu'):
         return await show_settings_menu(update, context)
     elif text == get_message(lang, 'menu', 'partner_menu'):
