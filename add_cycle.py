@@ -33,14 +33,9 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
     if update.callback_query:
         query = update.callback_query
         await query.answer()
-        selected_date = calendar.process_calendar_selection(query)
         
-        if isinstance(selected_date, tuple):  # Navigation through calendar
-            _, markup = selected_date
-            await query.message.edit_reply_markup(reply_markup=markup)
-            return START_DATE
-        
-        if selected_date:  # Date was selected
+        if query.data.startswith("date_"):  # Direct date selection
+            selected_date = query.data.split("_")[1]  # Get the date from callback_data
             context.user_data['start_date'] = selected_date
             
             # Get user's language
@@ -56,6 +51,13 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
                 reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS[lang], one_time_keyboard=False)
             )
             return SYMPTOMS
+            
+        elif query.data.startswith(("prev_", "next_")):  # Calendar navigation
+            selected_date = calendar.process_calendar_selection(query)
+            if isinstance(selected_date, tuple):
+                _, markup = selected_date
+                await query.message.edit_reply_markup(reply_markup=markup)
+                return START_DATE
     
     return START_DATE
 
