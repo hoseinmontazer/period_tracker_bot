@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from telegram.ext import (
     ConversationHandler, CallbackContext, MessageHandler,
     filters, CommandHandler, CallbackQueryHandler
@@ -27,17 +27,18 @@ async def start_add_cycle(update: Update, context: CallbackContext) -> int:
         )
         return ConversationHandler.END
     
-    # Create keyboard with symptoms
+    # Create keyboard with symptoms using KeyboardButton
     symptom_keyboard = []
-    # Add symptoms in pairs to make a more compact keyboard
+    # Add symptoms in pairs
     for i in range(0, len(symptoms), 2):
-        row = [symptoms[i]]
+        row = [KeyboardButton(symptoms[i])]
         if i + 1 < len(symptoms):
-            row.append(symptoms[i + 1])
+            row.append(KeyboardButton(symptoms[i + 1]))
         symptom_keyboard.append(row)
     
     # Add the Done button as a separate row
-    symptom_keyboard.append([get_message(lang, 'general', 'done')])
+    done_text = get_message(lang, 'general', 'done')
+    symptom_keyboard.append([KeyboardButton(done_text)])
     
     try:
         await update.message.reply_text(
@@ -75,17 +76,18 @@ async def handle_symptoms(update: Update, context: CallbackContext) -> int:
             )
             return ConversationHandler.END
         
-        # Create keyboard with medications
+        # Create keyboard with medications using KeyboardButton
         medication_keyboard = []
         # Add medications in pairs
         for i in range(0, len(medications), 2):
-            row = [medications[i]]
+            row = [KeyboardButton(medications[i])]
             if i + 1 < len(medications):
-                row.append(medications[i + 1])
+                row.append(KeyboardButton(medications[i + 1]))
             medication_keyboard.append(row)
         
         # Add the Done button
-        medication_keyboard.append([get_message(lang, 'general', 'done')])
+        done_text = get_message(lang, 'general', 'done')
+        medication_keyboard.append([KeyboardButton(done_text)])
         
         try:
             await update.message.reply_text(
