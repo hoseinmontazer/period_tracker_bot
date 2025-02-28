@@ -3,8 +3,11 @@
 import httpx
 from utils import load_tokens, refresh_token  # These utilities should work as expected
 from config import BASE_URL
-from telegram import Update, CallbackContext
+from telegram import Update
+from telegram.ext import CallbackContext
 from bot import get_message
+from states import MENU
+from languages import get_message
 
 async def fetch_cycle_analysis(update: Update, context: CallbackContext) -> None:
     """Fetch and display cycle analysis data."""

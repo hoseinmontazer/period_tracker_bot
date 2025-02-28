@@ -1,8 +1,9 @@
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
-from languages import get_message
-from states import MENU, PARTNER_MENU, PARTNER_MESSAGE
 import httpx
+from config import BASE_URL
+from states import MENU, PARTNER_MENU, PARTNER_MESSAGE
+from languages import get_message
 
 async def show_partner_menu(update: Update, context: CallbackContext) -> int:
     """Display partner menu."""
