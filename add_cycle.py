@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ConversationHandler, CallbackContext, MessageHandler,
     filters, CommandHandler, CallbackQueryHandler
@@ -27,26 +27,15 @@ async def start_add_cycle(update: Update, context: CallbackContext) -> int:
         )
         return ConversationHandler.END
     
-    # Create keyboard with symptoms using KeyboardButton
-    symptom_keyboard = []
-    # Add symptoms in pairs
-    for i in range(0, len(symptoms), 2):
-        row = []
-        row.append({"text": str(symptoms[i])})  # Convert to string and use dict format
-        if i + 1 < len(symptoms):
-            row.append({"text": str(symptoms[i + 1])})
-        symptom_keyboard.append(row)
-    
-    # Add the Done button as a separate row
-    done_text = get_message(lang, 'general', 'done')
-    symptom_keyboard.append([{"text": str(done_text)}])
+    # Create keyboard with symptoms using the predefined structure
+    symptom_keyboard = [[{"text": str(item)} for item in row] for row in symptoms]
     
     try:
         await update.message.reply_text(
             get_message(lang, 'cycle', 'select_symptoms'),
             reply_markup=ReplyKeyboardMarkup(
                 symptom_keyboard,
-                one_time_keyboard=True,
+                one_time_keyboard=False,  # Allow multiple selections
                 resize_keyboard=True
             )
         )
@@ -64,58 +53,42 @@ async def handle_symptoms(update: Update, context: CallbackContext) -> int:
     """Handle symptom selection."""
     text = update.message.text
     lang = context.user_data.get('language', 'en')
+    done_text = get_message(lang, 'buttons', 'done')
     
-    if text == get_message(lang, 'general', 'done'):
-        # Get medications for the current language with fallback to English
+    if text == done_text:
+        # Move to medication selection
         medications = MEDICATION_OPTIONS.get(lang, MEDICATION_OPTIONS.get('en', []))
+        medication_keyboard = [[{"text": str(item)} for item in row] for row in medications]
         
-        if not medications:
-            logger.error(f"No medications found for language {lang}")
-            await update.message.reply_text(
-                "Error: No medications available. Please contact support.",
-                reply_markup=ReplyKeyboardRemove()
+        await update.message.reply_text(
+            get_message(lang, 'cycle', 'select_medications'),
+            reply_markup=ReplyKeyboardMarkup(
+                medication_keyboard,
+                one_time_keyboard=False,  # Allow multiple selections
+                resize_keyboard=True
             )
-            return ConversationHandler.END
-        
-        # Create keyboard with medications
-        medication_keyboard = []
-        # Add medications in pairs
-        for i in range(0, len(medications), 2):
-            row = []
-            row.append({"text": str(medications[i])})
-            if i + 1 < len(medications):
-                row.append({"text": str(medications[i + 1])})
-            medication_keyboard.append(row)
-        
-        # Add the Done button
-        done_text = get_message(lang, 'general', 'done')
-        medication_keyboard.append([{"text": str(done_text)}])
-        
-        try:
-            await update.message.reply_text(
-                get_message(lang, 'cycle', 'select_medication'),
-                reply_markup=ReplyKeyboardMarkup(
-                    medication_keyboard,
-                    one_time_keyboard=True,
-                    resize_keyboard=True
-                )
-            )
-            context.user_data['medication'] = []
-            return MEDICATION
-        except Exception as e:
-            logger.error(f"Error creating medication keyboard: {e}")
-            await update.message.reply_text(
-                "An error occurred. Please try again or contact support.",
-                reply_markup=ReplyKeyboardRemove()
-            )
-            return ConversationHandler.END
+        )
+        context.user_data['medication'] = []
+        return MEDICATION
     
-    symptoms = SYMPTOM_OPTIONS.get(lang, SYMPTOM_OPTIONS.get('en', []))
-    if text in symptoms:
+    # Handle custom symptoms
+    custom_symptoms_text = get_message(lang, 'buttons', 'write_custom_symptoms')
+    if text == custom_symptoms_text:
+        await update.message.reply_text(get_message(lang, 'cycle', 'custom_symptoms'))
+        return SYMPTOMS
+    
+    # Add the symptom if it's not a control button
+    if text not in [custom_symptoms_text, done_text]:
         if 'symptoms' not in context.user_data:
             context.user_data['symptoms'] = []
-        context.user_data['symptoms'].append(text)
-        await update.message.reply_text(get_message(lang, 'cycle', 'symptom_added'))
+        if text not in context.user_data['symptoms']:
+            context.user_data['symptoms'].append(text)
+            await update.message.reply_text(
+                get_message(lang, 'cycle', 'added_item', 
+                text, 
+                get_message(lang, 'period_history', 'symptoms_title'),
+                ', '.join(context.user_data['symptoms']))
+            )
     
     return SYMPTOMS
 
@@ -123,20 +96,34 @@ async def handle_medication(update: Update, context: CallbackContext) -> int:
     """Handle medication selection."""
     text = update.message.text
     lang = context.user_data.get('language', 'en')
+    done_text = get_message(lang, 'buttons', 'done')
     
-    if text == get_message(lang, 'general', 'done'):
+    if text == done_text:
         # Move to date selection
         await update.message.reply_text(
-            get_message(lang, 'cycle', 'select_start_date'),
+            get_message(lang, 'cycle', 'select_date'),
             reply_markup=calendar.create_calendar()
         )
         return START_DATE
     
-    if text in MEDICATION_OPTIONS.get(lang, []):
+    # Handle custom medication
+    custom_med_text = get_message(lang, 'buttons', 'write_custom_medication')
+    if text == custom_med_text:
+        await update.message.reply_text(get_message(lang, 'cycle', 'custom_medication'))
+        return MEDICATION
+    
+    # Add the medication if it's not a control button
+    if text not in [custom_med_text, done_text]:
         if 'medication' not in context.user_data:
             context.user_data['medication'] = []
-        context.user_data['medication'].append(text)
-        await update.message.reply_text(get_message(lang, 'cycle', 'medication_added'))
+        if text not in context.user_data['medication']:
+            context.user_data['medication'].append(text)
+            await update.message.reply_text(
+                get_message(lang, 'cycle', 'added_item',
+                text,
+                get_message(lang, 'period_history', 'medicine_title'),
+                ', '.join(context.user_data['medication']))
+            )
     
     return MEDICATION
 
@@ -196,7 +183,7 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
 # Create the conversation handler
 add_cycle_conversation = ConversationHandler(
     entry_points=[MessageHandler(
-        filters.Regex('^(Add New Cycle|چرخه جدید)$'),
+        filters.Regex('^(➕ Add New Cycle|➕ افزودن دوره جدید)$'),
         start_add_cycle
     )],
     states={
