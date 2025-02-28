@@ -1,5 +1,5 @@
 from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, ConversationHandler
 import httpx
 from config import BASE_URL
 from states import MENU, PARTNER_MENU, PARTNER_MESSAGE
