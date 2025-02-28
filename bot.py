@@ -5,7 +5,7 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler, filters, 
     ConversationHandler, CallbackContext, CallbackQueryHandler
 )
-from auth import authenticate_user
+from auth import authenticate_user, handle_registration
 from period import fetch_periods
 from cycle_analysis import fetch_cycle_analysis as cycle_analysis_handler
 from add_cycle import (
