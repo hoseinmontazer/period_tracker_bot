@@ -11,10 +11,11 @@ from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 from settings import show_settings_menu, handle_settings
 import config
-from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, SETTINGS
+from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, SETTINGS, PARTNER_MENU, PARTNER_MESSAGE
 import aiohttp
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
+from partner import show_partner_menu, handle_partner_menu
 
 # Logging setup
 logging.basicConfig(
@@ -59,7 +60,8 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
-        [get_message(lang, 'settings', 'menu')]  # Settings option
+        [get_message(lang, 'menu', 'partner_menu')],  # Add Partner Menu option
+        [get_message(lang, 'settings', 'menu')]
     ]
 
     await update.message.reply_text(
@@ -233,8 +235,10 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     lang = context.user_data.get('language', 'en')
     
-    if text == get_message(lang, 'settings', 'menu'):  # When "Settings" is clicked
+    if text == get_message(lang, 'settings', 'menu'):
         return await show_settings_menu(update, context)
+    elif text == get_message(lang, 'menu', 'partner_menu'):
+        return await show_partner_menu(update, context)
     elif text == get_message(lang, 'menu', 'track_period'):
         return await view_history(update, context)
     elif text == get_message(lang, 'menu', 'view_history'):
@@ -281,6 +285,12 @@ def main():
             ],
             MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
+            ],
+            PARTNER_MENU: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)
+            ],
+            PARTNER_MESSAGE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_message)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)],

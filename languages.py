@@ -75,6 +75,18 @@ EN = {
         'generation_error': "❌ Error generating invitation code. Please try again.",
         'acceptance_error': "❌ Error accepting invitation. Please check the code and try again.",
         'invalid_code': "❌ Invalid invitation code. Please try again."
+    },
+    'partner': {
+        'menu': "👥 **Partner Menu**\nChoose an option:",
+        'view_partner_cycles': "View Partner's Cycles",
+        'partner_analysis': "Partner's Analysis",
+        'send_message': "Send Message",
+        'partner_notifications': "Partner Notifications",
+        'partner_settings': "Partner Settings",
+        'enter_message': "Enter your message to your partner:",
+        'coming_soon': "🔜 This feature is coming soon!",
+        'message_sent': "✅ Message sent to partner",
+        'no_partner': "❌ No partner connected. Please connect with a partner first."
     }
 }
 
@@ -155,6 +167,18 @@ FA = {
         'generation_error': "❌ خطا در تولید کد دعوت. لطفاً دوباره تلاش کنید.",
         'acceptance_error': "❌ خطا در پذیرش دعوت. لطفاً کد را بررسی کرده و دوباره تلاش کنید.",
         'invalid_code': "❌ کد دعوت نامعتبر است. لطفاً دوباره تلاش کنید."
+    },
+    'partner': {
+        'menu': "👥 **منوی شریک**\nیک گزینه را انتخاب کنید:",
+        'view_partner_cycles': "مشاهده دوره‌های شریک",
+        'partner_analysis': "تحلیل دوره‌های شریک",
+        'send_message': "ارسال پیام",
+        'partner_notifications': "اعلان‌های شریک",
+        'partner_settings': "تنظیمات شریک",
+        'enter_message': "پیام خود را به شریک وارد کنید:",
+        'coming_soon': "🔜 این ویژگی به زودی اضافه خواهد شد!",
+        'message_sent': "✅ پیام به شریک ارسال شد",
+        'no_partner': "❌ شریکی متصل نیست. لطفا ابتدا با یک شریک متصل شوید."
     }
 }
 
