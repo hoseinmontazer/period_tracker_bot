@@ -25,24 +25,34 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(f"{BASE_URL}/api/user/invitation/", headers=headers)
+            # Using POST request without body
+            response = await client.post(
+                f"{BASE_URL}/api/user/invitation/",
+                headers=headers
+            )
 
             if response.status_code == 401:  # Token expired
                 new_token = await refresh_token(chat_id, user_tokens)
                 if new_token:
                     headers["Authorization"] = f"Bearer {new_token}"
-                    response = await client.post(f"{BASE_URL}/api/user/invitation/", headers=headers)
+                    response = await client.post(
+                        f"{BASE_URL}/api/user/invitation/",
+                        headers=headers
+                    )
                 else:
                     await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
                     return REGISTER
 
             if response.status_code == 200:
                 data = response.json()
-                invitation_code = data.get('code', 'No code received')
-                await update.message.reply_text(
-                    f"✨ Your invitation code is: {invitation_code}\n\n"
-                    f"Share this code with your partner. They can accept it using the 'Accept Invitation Code' option in their menu."
-                )
+                invitation_code = data.get('invitation_code')  # Changed to match API response
+                if invitation_code:
+                    await update.message.reply_text(
+                        f"✨ Your invitation code is: {invitation_code}\n\n"
+                        f"Share this code with your partner. They can accept it using the 'Accept Invitation Code' option in their menu."
+                    )
+                else:
+                    await update.message.reply_text("Failed to get invitation code from response.")
             else:
                 response_text = await response.text()
                 await update.message.reply_text(f"Failed to generate invitation code: {response_text}")
