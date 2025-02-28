@@ -19,7 +19,7 @@ from settings import show_settings_menu, handle_settings
 import config
 from states import (
     REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, 
-    SETTINGS, START_DATE, SYMPTOMS, MEDICATION
+    SETTINGS, START_DATE, SYMPTOMS, MEDICATION, PARTNER_MENU
 )
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
@@ -211,6 +211,7 @@ def main():
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
             MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
             SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],
+            PARTNER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
         allow_reentry=True,
