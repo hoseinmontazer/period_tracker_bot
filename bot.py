@@ -9,6 +9,7 @@ from period import fetch_periods
 from cycle_analysis import fetch_cycle_analysis
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
+from settings import show_settings_menu, handle_settings
 import config
 from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, SETTINGS
 import aiohttp
@@ -233,7 +234,6 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     if text == get_message(lang, 'settings', 'change_language'):
-        from settings import show_settings_menu
         return await show_settings_menu(update, context)
     elif text == get_message(lang, 'menu', 'track_period'):
         return await view_history(update, context)
@@ -276,11 +276,11 @@ def main():
             ACCEPTING_INVITATION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, accept_invitation)
             ],
-            MENU: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
-            ],
             SETTINGS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)
+            ],
+            MENU: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
