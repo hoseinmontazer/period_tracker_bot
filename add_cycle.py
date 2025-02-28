@@ -8,6 +8,9 @@ from config import BASE_URL
 from states import MENU, START_DATE, SYMPTOMS, MEDICATION
 from calendar_keyboard import CalendarKeyboard
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
+import logging
+
+logger = logging.getLogger(__name__)
 
 calendar = CalendarKeyboard()
 
@@ -29,14 +32,28 @@ async def start_add_cycle(update, context):
     return START_DATE
 
 async def handle_calendar_selection(update: Update, context: CallbackContext):
-    if update.callback_query:
-        query = update.callback_query
-        await query.answer()
+    query = update.callback_query
+    if not query:
+        return START_DATE
+
+    await query.answer()  # Always answer the callback query first
+    
+    if query.data == "ignore":
+        return START_DATE
         
-        if query.data == "ignore":
+    if query.data.startswith(("prev_", "next_")):
+        try:
+            _, year, month = query.data.split("_")
+            year, month = int(year), int(month)
+            markup = calendar.create_calendar(year, month)
+            await query.message.edit_reply_markup(reply_markup=markup)
+            return START_DATE
+        except Exception as e:
+            logger.error(f"Error in calendar navigation: {e}")
             return START_DATE
             
-        if query.data.startswith("date_"):
+    if query.data.startswith("date_"):
+        try:
             selected_date = query.data.split("_")[1]
             context.user_data['start_date'] = selected_date
             lang = context.user_data.get('language', 'en')
@@ -58,7 +75,7 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
             
             # Send confirmation and move to symptoms
             await query.message.reply_text(
-                f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}",
+                f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}"
             )
             
             await query.message.reply_text(
@@ -69,15 +86,12 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
             # Try to delete the calendar message
             try:
                 await query.message.delete()
-            except:
-                pass
-                
-            return SYMPTOMS
+            except Exception as e:
+                logger.error(f"Error deleting calendar message: {e}")
             
-        elif query.data.startswith(("prev_", "next_")):
-            _, year, month = query.data.split("_")
-            markup = calendar.create_calendar(int(year), int(month))
-            await query.message.edit_reply_markup(reply_markup=markup)
+            return SYMPTOMS
+        except Exception as e:
+            logger.error(f"Error in date selection: {e}")
             return START_DATE
     
     return START_DATE
@@ -236,7 +250,7 @@ add_cycle_conversation = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex("^Add New Cycle$"), start_add_cycle)],
     states={
         START_DATE: [
-            CallbackQueryHandler(handle_calendar_selection),
+            CallbackQueryHandler(handle_calendar_selection),  # This will handle all calendar-related callbacks
         ],
         SYMPTOMS: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)
@@ -248,5 +262,6 @@ add_cycle_conversation = ConversationHandler(
     fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],
     allow_reentry=True,
     per_chat=True,
-    per_message=True
+    per_message=True,
+    name="add_cycle_conversation"  # Add a name for better error tracking
 )

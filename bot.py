@@ -251,7 +251,11 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     lang = context.user_data.get('language', 'en')
     
-    if text == get_message(lang, 'settings', 'menu'):
+    if text == get_message(lang, 'menu', 'add_new_cycle'):
+        # End the main conversation before starting the add_cycle conversation
+        await start_add_cycle(update, context)
+        return ConversationHandler.END  # End main conversation
+    elif text == get_message(lang, 'settings', 'menu'):
         return await show_settings_menu(update, context)
     elif text == get_message(lang, 'menu', 'partner_menu'):
         return await show_partner_menu(update, context)
@@ -261,9 +265,6 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         return await view_history(update, context)
     elif text == get_message(lang, 'menu', 'cycle_analysis'):
         return await cycle_analysis_handler(update, context)
-    elif text == get_message(lang, 'menu', 'add_new_cycle'):
-        result = await start_add_cycle(update, context)
-        return result
     elif text == get_message(lang, 'menu', 'invitation_partner'):
         return await generate_invitation_code(update, context)
     elif text == get_message(lang, 'menu', 'accept_invitation'):
@@ -277,10 +278,10 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
-    # Add the add_cycle_conversation handler ONLY
-    application.add_handler(add_cycle_conversation, group=1)
+    # Add the add_cycle_conversation handler with highest priority
+    application.add_handler(add_cycle_conversation, group=0)
 
-    # Main conversation handler
+    # Main conversation handler with lower priority
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -302,8 +303,8 @@ def main():
         name="main_conversation"
     )
 
-    # Add main conversation handler
-    application.add_handler(conv_handler, group=2)
+    # Add main conversation handler with lower priority
+    application.add_handler(conv_handler, group=1)
     
     # Add standalone command handlers
     application.add_handler(CommandHandler('logout', logout))
