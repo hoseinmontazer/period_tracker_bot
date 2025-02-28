@@ -43,19 +43,23 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
                     await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
                     return REGISTER
 
-            if response.status_code == 200:
-                data = response.json()
-                invitation_code = data.get('invitation_code')  # Changed to match API response
-                if invitation_code:
-                    await update.message.reply_text(
-                        f"✨ Your invitation code is: {invitation_code}\n\n"
-                        f"Share this code with your partner. They can accept it using the 'Accept Invitation Code' option in their menu."
-                    )
-                else:
-                    await update.message.reply_text("Failed to get invitation code from response.")
+            if response.status_code in [200, 201]:  # Accept both 200 and 201 status codes
+                try:
+                    data = response.json()
+                    invitation_code = data.get('invitation_code')
+                    if invitation_code:
+                        await update.message.reply_text(
+                            f"✨ Your invitation code is: {invitation_code}\n\n"
+                            f"Share this code with your partner. They can accept it using the 'Accept Invitation Code' option in their menu."
+                        )
+                    else:
+                        await update.message.reply_text("Failed to get invitation code from response.")
+                except ValueError as e:
+                    logger.error(f"Error parsing JSON response: {str(e)}")
+                    await update.message.reply_text("Failed to parse the server response.")
             else:
-                response_text = await response.text()
-                await update.message.reply_text(f"Failed to generate invitation code: {response_text}")
+                error_text = response.text
+                await update.message.reply_text(f"Failed to generate invitation code: {error_text}")
     except Exception as e:
         logger.error(f"Error generating invitation code: {str(e)}")
         await update.message.reply_text("An error occurred while generating the invitation code.")
