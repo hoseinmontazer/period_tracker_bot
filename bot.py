@@ -29,6 +29,7 @@ from partner import (
     handle_partner_message
 )
 from calendar_keyboard import CalendarKeyboard
+from menu_handlers import show_main_menu, handle_menu
 
 # Logging setup
 logging.basicConfig(
