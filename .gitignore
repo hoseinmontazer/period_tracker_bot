@@ -44,3 +44,4 @@ tox.ini
 # Jupyter Notebooks
 .ipynb_checkpoints
 
+user_tokens.json
