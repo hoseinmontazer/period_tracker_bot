@@ -67,38 +67,24 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
         await query.answer()
         print("Callback query answered")
         
-        if query.data == "ignore":
-            print("Ignore button pressed - returning to START_DATE")
+        from bot import calendar  # Import the global calendar instance
+        
+        # Process the selection using calendar keyboard's method
+        result = calendar.process_calendar_selection(query)
+        
+        # If result is a tuple, it's a navigation action
+        if isinstance(result, tuple):
+            selected_date, new_markup = result
+            await query.message.edit_reply_markup(reply_markup=new_markup)
             return START_DATE
             
-        if query.data.startswith(("prev_", "next_")):
-            print(f"Navigation button pressed: {query.data}")
-            _, year, month = query.data.split("_")
-            year, month = int(year), int(month)
-            print(f"Creating calendar for year: {year}, month: {month}")
-            
-            markup = calendar.create_calendar(year, month)
-            print("New calendar markup created")
-            
-            try:
-                await query.message.edit_reply_markup(reply_markup=markup)
-                print("Calendar display updated successfully")
-            except Exception as e:
-                print(f"Error updating calendar: {e}")
-            return START_DATE
-            
-        if query.data.startswith("date_"):
-            print(f"Date selection detected: {query.data}")
-            selected_date = query.data.split("_")[1]
-            print(f"Parsed selected date: {selected_date}")
-            
+        # If result is a string, it's a date selection
+        if isinstance(result, str):
             # Store the date
-            context.user_data['start_date'] = selected_date
+            context.user_data['start_date'] = result
             lang = context.user_data.get('language', 'en')
-            print(f"Stored date in context, language is: {lang}")
             
             # Create symptoms keyboard
-            print("Creating symptoms keyboard")
             keyboard = []
             for symptom_row in SYMPTOM_OPTIONS[lang]:
                 keyboard.append(symptom_row)
@@ -109,35 +95,27 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
                 one_time_keyboard=False,
                 resize_keyboard=True
             )
-            print("Symptoms keyboard created")
             
             try:
-                # First send the new messages
-                print("Sending confirmation message")
+                # Send confirmation and symptoms prompt
                 await query.message.reply_text(
-                    f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}"
+                    f"{get_message(lang, 'cycle', 'date_selected')}: {result}"
                 )
-                print("Confirmation message sent")
                 
-                print("Sending symptoms prompt")
                 await query.message.reply_text(
                     get_message(lang, 'cycle', 'select_symptoms'),
                     reply_markup=markup
                 )
-                print("Symptoms prompt sent")
                 
-                # Then try to delete the calendar
-                print("Attempting to delete calendar message")
+                # Delete the calendar message
                 await query.message.delete()
-                print("Calendar message deleted successfully")
+                
+                return SYMPTOMS
                 
             except Exception as e:
                 print(f"Error in message handling: {e}")
                 logger.error(f"Message handling error: {e}", exc_info=True)
-            
-            print("=== Transitioning to SYMPTOMS state ===")
-            return SYMPTOMS
-            
+                
     except Exception as e:
         print(f"ERROR in calendar selection handler: {e}")
         logger.error("Calendar selection error", exc_info=True)
