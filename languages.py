@@ -52,7 +52,10 @@ EN = {
         'no_history': "ℹ️ You have no recorded period history.",
         'fetch_failed': "❌ Failed to retrieve history. Please try again later.",
         'unknown_duration': "?",
-        'operation_cancelled': "Operation cancelled."
+        'operation_cancelled': "Operation cancelled.",
+        'fetch_failed': "❌ Failed to fetch data. Please try again later.",
+        'no_data': "ℹ️ No data available yet.",
+        'login_required': "🔒 Please login first to access this feature."
     },
     'period_history': {
         'title': "📅 **Your Period History**:",
@@ -146,7 +149,10 @@ FA = {
         'no_history': "ℹ️ شما هیچ سابقه دوره‌ای ثبت شده‌ای ندارید.",
         'fetch_failed': "❌ دریافت تاریخچه ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
         'unknown_duration': "؟",
-        'operation_cancelled': "عملیات لغو شد."
+        'operation_cancelled': "عملیات لغو شد.",
+        'fetch_failed': "❌ دریافت اطلاعات ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
+        'no_data': "ℹ️ اطلاعاتی برای نمایش وجود ندارد.",
+        'login_required': "🔒 برای دسترسی به این ویژگی ابتدا باید وارد شوید."
     },
     'period_history': {
         'title': "📅 **تاریخچه دوره شما**:",

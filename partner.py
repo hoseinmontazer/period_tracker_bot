@@ -2,6 +2,7 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
 from languages import get_message
 from states import MENU, PARTNER_MENU, PARTNER_MESSAGE
+import httpx
 
 async def show_partner_menu(update: Update, context: CallbackContext) -> int:
     """Display partner menu."""
@@ -53,8 +54,49 @@ async def view_partner_cycles(update: Update, context: CallbackContext) -> int:
 async def partner_analysis(update: Update, context: CallbackContext) -> int:
     """View partner's cycle analysis."""
     lang = context.user_data.get('language', 'en')
-    # Add API call to fetch partner's analysis
-    await update.message.reply_text(get_message(lang, 'partner', 'coming_soon'))
+    chat_id = str(update.message.chat_id)
+    
+    # Get access token from user_tokens
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+        return PARTNER_MENU
+        
+    access_token = user_tokens[chat_id]["access"]
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "role": "partner"
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{BASE_URL}/api/periods/cycle_analysis/",
+                headers=headers
+            )
+
+            if response.status_code == 200:
+                data = response.json()['data']
+                
+                # Format the partner analysis message
+                analysis_message = (
+                    f"👥 *{data['partner_name']}'s Cycle Analysis*\n\n"
+                    f"📅 Next Predicted Period: *{data['next_predicted_date']}*\n"
+                    f"📊 Average Cycle Length: *{data['cycle_length_avg'] or 'Not enough data'}*\n"
+                    f"🔄 Cycle Regularity: *{data['is_regular'] if data['is_regular'] is not None else 'Not enough data'}*\n"
+                    f"📆 Last Period Start: *{data['last_period_start']}*\n"
+                )
+                
+                await update.message.reply_text(
+                    analysis_message,
+                    parse_mode="Markdown"
+                )
+            else:
+                await update.message.reply_text(get_message(lang, 'errors', 'fetch_failed'))
+                
+    except Exception as e:
+        await update.message.reply_text(get_message(lang, 'errors', 'fetch_failed'))
+        
     return PARTNER_MENU
 
 async def start_partner_message(update: Update, context: CallbackContext) -> int:

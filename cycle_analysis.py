@@ -3,62 +3,52 @@
 import httpx
 from utils import load_tokens, refresh_token  # These utilities should work as expected
 from config import BASE_URL
+from telegram import Update, CallbackContext
+from bot import get_message
 
-async def fetch_cycle_analysis(update, access_token):
+async def fetch_cycle_analysis(update: Update, context: CallbackContext) -> None:
     """Fetch and display cycle analysis data."""
     chat_id = str(update.message.chat_id)
+    lang = context.user_data.get('language', 'en')
+    
+    # Get access token from user_tokens
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+        return MENU
+
+    access_token = user_tokens[chat_id]["access"]
     headers = {"Authorization": f"Bearer {access_token}"}
-    print(f"Using access token: {access_token}")
 
-    # Load user tokens to check for refresh tokens
-    user_tokens = load_tokens()  # Ensure this function loads the user tokens correctly
-
-    # Make the request for cycle analysis
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/api/periods/cycle_analysis/", headers=headers)
-
-        if response.status_code == 200:
-            # Handle successful response
-            analysis = response.json().get("data", {})
-            if not analysis:
-                await update.message.reply_text("ℹ️ No cycle analysis data available.")
-                return
-
-            # Formatting the cycle analysis
-            formatted_analysis = (
-                "📊 **Cycle Analysis Report**\n\n"
-                f"📅 **Average Cycle Length:** `{analysis.get('average_cycle', 'N/A')} days`\n"
-                f"📈 **Regularity Score:** `{analysis.get('regularity_score', 'N/A')}%`\n"
-                f"🔄 **Cycle Variations:** `{', '.join(map(str, analysis.get('cycle_variations', [])))}`\n"
-                f"🔮 **Prediction Reliability:** `{analysis.get('prediction_reliability', 'N/A')}%`\n"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{BASE_URL}/api/periods/cycle_analysis/",
+                headers=headers
             )
 
-            # Sending the formatted analysis to the user
-            await update.message.reply_text(formatted_analysis, parse_mode="Markdown")
-
-        elif response.status_code == 401:
-            # If session expired, attempt to refresh the token
-            new_token = await refresh_token(chat_id, user_tokens)  # Pass user_tokens here
-            if new_token:
-                headers["Authorization"] = f"Bearer {new_token}"
-                response = await client.get(f"{BASE_URL}/api/periods/cycle_analysis/", headers=headers)
-
-                if response.status_code == 200:
-                    # Retry after refreshing the token
-                    analysis = response.json().get("data", {})
-                    formatted_analysis = (
-                        "📊 **Cycle Analysis Report**\n\n"
-                        f"📅 **Average Cycle Length:** `{analysis.get('average_cycle', 'N/A')} days`\n"
-                        f"📈 **Regularity Score:** `{analysis.get('regularity_score', 'N/A')}%`\n"
-                        f"🔄 **Cycle Variations:** `{', '.join(map(str, analysis.get('cycle_variations', [])))}`\n"
-                        f"🔮 **Prediction Reliability:** `{analysis.get('prediction_reliability', 'N/A')}%`\n"
-                    )
-                    await update.message.reply_text(formatted_analysis, parse_mode="Markdown")
-                else:
-                    await update.message.reply_text("❌ Failed to retrieve cycle analysis after refreshing the token.")
+            if response.status_code == 200:
+                data = response.json()['data']
+                
+                # Format the analysis message
+                analysis_message = (
+                    "📊 *Your Cycle Analysis*\n\n"
+                    f"📅 Next Predicted Period: *{data['next_predicted_date']}*\n"
+                    f"⏱ Average Cycle Length: *{data['average_cycle']} days*\n"
+                    f"📈 Regularity Score: *{data['regularity_score']}%*\n"
+                    f"🎯 Prediction Reliability: *{data['prediction_reliability']}%*\n"
+                    f"🔄 Cycle Variations: *{', '.join(map(str, data['cycle_variations']))} days*"
+                )
+                
+                await update.message.reply_text(
+                    analysis_message,
+                    parse_mode="Markdown"
+                )
             else:
-                await update.message.reply_text("❌ Session expired! Please log in again using /start.")
-
-        else:
-            await update.message.reply_text("❌ Failed to retrieve cycle analysis. Please try again later.")
+                await update.message.reply_text(get_message(lang, 'errors', 'fetch_failed'))
+                
+    except Exception as e:
+        await update.message.reply_text(get_message(lang, 'errors', 'fetch_failed'))
+        
+    return MENU
 
