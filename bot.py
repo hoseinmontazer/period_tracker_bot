@@ -6,7 +6,7 @@ from telegram.ext import (
 )
 from auth import authenticate_user
 from period import fetch_periods
-from cycle_analysis import fetch_cycle_analysis
+from cycle_analysis import fetch_cycle_analysis as cycle_analysis_handler
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 from settings import show_settings_menu, handle_settings
