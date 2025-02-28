@@ -16,16 +16,47 @@ async def start_add_cycle(update: Update, context: CallbackContext) -> int:
     """Start the add cycle conversation with symptoms selection."""
     lang = context.user_data.get('language', 'en')
     
-    # Show symptoms options first
-    symptom_keyboard = [[option] for option in SYMPTOM_OPTIONS.get(lang, [])]
+    # Get symptoms for the current language with fallback to English
+    symptoms = SYMPTOM_OPTIONS.get(lang, SYMPTOM_OPTIONS.get('en', []))
+    
+    if not symptoms:
+        logger.error(f"No symptoms found for language {lang}")
+        await update.message.reply_text(
+            "Error: No symptoms available. Please contact support.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return ConversationHandler.END
+    
+    # Create keyboard with symptoms
+    symptom_keyboard = []
+    # Add symptoms in pairs to make a more compact keyboard
+    for i in range(0, len(symptoms), 2):
+        row = [symptoms[i]]
+        if i + 1 < len(symptoms):
+            row.append(symptoms[i + 1])
+        symptom_keyboard.append(row)
+    
+    # Add the Done button as a separate row
     symptom_keyboard.append([get_message(lang, 'general', 'done')])
     
-    await update.message.reply_text(
-        get_message(lang, 'cycle', 'select_symptoms'),
-        reply_markup=ReplyKeyboardMarkup(symptom_keyboard, one_time_keyboard=True)
-    )
-    context.user_data['symptoms'] = []
-    return SYMPTOMS
+    try:
+        await update.message.reply_text(
+            get_message(lang, 'cycle', 'select_symptoms'),
+            reply_markup=ReplyKeyboardMarkup(
+                symptom_keyboard,
+                one_time_keyboard=True,
+                resize_keyboard=True
+            )
+        )
+        context.user_data['symptoms'] = []
+        return SYMPTOMS
+    except Exception as e:
+        logger.error(f"Error creating symptoms keyboard: {e}")
+        await update.message.reply_text(
+            "An error occurred. Please try again or contact support.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return ConversationHandler.END
 
 async def handle_symptoms(update: Update, context: CallbackContext) -> int:
     """Handle symptom selection."""
@@ -33,18 +64,50 @@ async def handle_symptoms(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     if text == get_message(lang, 'general', 'done'):
-        # Move to medication selection
-        medication_keyboard = [[option] for option in MEDICATION_OPTIONS.get(lang, [])]
+        # Get medications for the current language with fallback to English
+        medications = MEDICATION_OPTIONS.get(lang, MEDICATION_OPTIONS.get('en', []))
+        
+        if not medications:
+            logger.error(f"No medications found for language {lang}")
+            await update.message.reply_text(
+                "Error: No medications available. Please contact support.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            return ConversationHandler.END
+        
+        # Create keyboard with medications
+        medication_keyboard = []
+        # Add medications in pairs
+        for i in range(0, len(medications), 2):
+            row = [medications[i]]
+            if i + 1 < len(medications):
+                row.append(medications[i + 1])
+            medication_keyboard.append(row)
+        
+        # Add the Done button
         medication_keyboard.append([get_message(lang, 'general', 'done')])
         
-        await update.message.reply_text(
-            get_message(lang, 'cycle', 'select_medication'),
-            reply_markup=ReplyKeyboardMarkup(medication_keyboard, one_time_keyboard=True)
-        )
-        context.user_data['medication'] = []
-        return MEDICATION
+        try:
+            await update.message.reply_text(
+                get_message(lang, 'cycle', 'select_medication'),
+                reply_markup=ReplyKeyboardMarkup(
+                    medication_keyboard,
+                    one_time_keyboard=True,
+                    resize_keyboard=True
+                )
+            )
+            context.user_data['medication'] = []
+            return MEDICATION
+        except Exception as e:
+            logger.error(f"Error creating medication keyboard: {e}")
+            await update.message.reply_text(
+                "An error occurred. Please try again or contact support.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            return ConversationHandler.END
     
-    if text in SYMPTOM_OPTIONS.get(lang, []):
+    symptoms = SYMPTOM_OPTIONS.get(lang, SYMPTOM_OPTIONS.get('en', []))
+    if text in symptoms:
         if 'symptoms' not in context.user_data:
             context.user_data['symptoms'] = []
         context.user_data['symptoms'].append(text)
