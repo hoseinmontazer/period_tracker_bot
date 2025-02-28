@@ -1,8 +1,8 @@
 import logging
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, CallbackQuery
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, filters, 
-    ConversationHandler, CallbackContext
+    ConversationHandler, CallbackContext, CallbackQueryHandler
 )
 from auth import authenticate_user
 from period import fetch_periods
@@ -280,8 +280,14 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
+    # Create calendar instance
+    calendar = CalendarKeyboard()
+
     # Add the add_cycle_conversation handler FIRST
     application.add_handler(add_cycle_conversation)
+
+    # Add calendar callback handler
+    application.add_handler(CallbackQueryHandler(calendar_callback))
 
     # Then add the main conversation handler
     conv_handler = ConversationHandler(
