@@ -11,7 +11,10 @@ from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 from settings import show_settings_menu, handle_settings
 import config
-from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, SETTINGS, PARTNER_MENU, PARTNER_MESSAGE
+from states import (
+    REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, 
+    SETTINGS, START_DATE, SYMPTOMS, MEDICATION  # Add these states
+)
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
 from partner import (
@@ -253,7 +256,8 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     elif text == get_message(lang, 'menu', 'cycle_analysis'):
         return await cycle_analysis_handler(update, context)
     elif text == get_message(lang, 'menu', 'add_new_cycle'):
-        return await start_add_cycle(update, context)
+        result = await start_add_cycle(update, context)
+        return result
     elif text == get_message(lang, 'menu', 'invitation_partner'):
         return await generate_invitation_code(update, context)
     elif text == get_message(lang, 'menu', 'accept_invitation'):
@@ -267,10 +271,10 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
-    # Add the add_cycle_conversation handler FIRST with higher priority
+    # Add the add_cycle_conversation handler with its own states
     application.add_handler(add_cycle_conversation, group=1)
 
-    # Main conversation handler with lower priority
+    # Main conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -286,12 +290,17 @@ def main():
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
             MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
             SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],
+            # Add these states to handle calendar transitions
+            START_DATE: [CallbackQueryHandler(handle_calendar_selection)],
+            SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],
+            MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
         allow_reentry=True,
+        name="main_conversation"  # Add a name to distinguish it
     )
 
-    # Add main conversation handler with lower priority
+    # Add main conversation handler
     application.add_handler(conv_handler, group=2)
     
     # Add standalone command handlers
