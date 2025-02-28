@@ -58,8 +58,7 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
-        [get_message(lang, 'settings', 'menu')],  # Settings option
-        [get_message(lang, 'menu', 'logout')]
+        [get_message(lang, 'settings', 'menu')]  # Settings option
     ]
 
     await update.message.reply_text(

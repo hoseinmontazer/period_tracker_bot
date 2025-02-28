@@ -8,9 +8,9 @@ async def show_settings_menu(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     reply_keyboard = [
+        [get_message(lang, 'menu', 'invitation_partner'), get_message(lang, 'menu', 'accept_invitation')],
         ['🇬🇧 English', '🇮🇷 فارسی'],
-        [get_message(lang, 'menu', 'invitation_partner')],
-        [get_message(lang, 'menu', 'accept_invitation')],
+        [get_message(lang, 'menu', 'logout')],
         [get_message(lang, 'settings', 'back_to_main')]
     ]
     
@@ -40,5 +40,8 @@ async def handle_settings(update: Update, context: CallbackContext) -> int:
         return await generate_invitation_code(update, context)
     elif text == get_message(lang, 'menu', 'accept_invitation'):
         return await start_accept_invitation(update, context)
+    elif text == get_message(lang, 'menu', 'logout'):
+        from bot import logout
+        return await logout(update, context)
     
     return SETTINGS 
