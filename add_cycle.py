@@ -144,6 +144,7 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
     chat_id = str(update.callback_query.message.chat_id)
     user_tokens = context.bot_data.get('user_tokens', {})
     access_token = user_tokens.get(chat_id, {}).get('access')
+    lang = context.user_data.get('language', 'en')
     
     if not access_token:
         await update.callback_query.message.reply_text("Please login first.")
@@ -153,7 +154,7 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
         async with aiohttp.ClientSession() as session:
             headers = {'Authorization': f'Bearer {access_token}'}
             data = {
-                'start_date': context.user_data['start_date'],  # Already in YYYY-MM-DD format
+                'start_date': context.user_data['start_date'],
                 'symptoms': ','.join(context.user_data.get('symptoms', [])),
                 'medication': ','.join(context.user_data.get('medication', []))
             }
@@ -164,19 +165,41 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
                 data=data
             ) as response:
                 if response.status == 201:
+                    # Show success message
                     await update.callback_query.message.reply_text(
-                        get_message(context.user_data.get('language', 'en'), 'cycle', 'save_success'),
+                        get_message(lang, 'cycle', 'save_success'),
                         reply_markup=ReplyKeyboardRemove()
                     )
+                    
+                    # Show main menu
+                    reply_keyboard = [
+                        [{"text": get_message(lang, 'menu', 'track_period')}, 
+                         {"text": get_message(lang, 'menu', 'view_history')}],
+                        [{"text": get_message(lang, 'menu', 'cycle_analysis')}, 
+                         {"text": get_message(lang, 'menu', 'add_new_cycle')}],
+                        [{"text": get_message(lang, 'menu', 'partner_menu')}],
+                        [{"text": get_message(lang, 'settings', 'menu')}]
+                    ]
+
+                    await update.callback_query.message.reply_text(
+                        get_message(lang, 'menu', 'main'),
+                        reply_markup=ReplyKeyboardMarkup(
+                            reply_keyboard,
+                            one_time_keyboard=True,
+                            resize_keyboard=True
+                        ),
+                        parse_mode="Markdown"
+                    )
+                    return ConversationHandler.END
                 else:
                     await update.callback_query.message.reply_text(
-                        get_message(context.user_data.get('language', 'en'), 'cycle', 'save_failed')
+                        get_message(lang, 'cycle', 'save_failed')
                     )
     
     except Exception as e:
         logger.error(f"Error submitting cycle: {e}")
         await update.callback_query.message.reply_text(
-            get_message(context.user_data.get('language', 'en'), 'cycle', 'save_failed')
+            get_message(lang, 'cycle', 'save_failed')
         )
     
     return ConversationHandler.END
