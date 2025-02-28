@@ -9,49 +9,92 @@ from states import MENU, START_DATE, SYMPTOMS, MEDICATION
 from calendar_keyboard import CalendarKeyboard
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 import logging
+from datetime import datetime
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 calendar = CalendarKeyboard()
 
 async def start_add_cycle(update, context):
+    print("\n=== Starting Add Cycle Flow ===")
+    logger.info("Starting add cycle process")
+    
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
+    
+    print(f"Chat ID: {chat_id}, Language: {lang}")
+    logger.info(f"User {chat_id} starting add cycle with language {lang}")
     
     # First check if user is authenticated
     from bot import user_tokens
     if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+        logger.warning(f"User {chat_id} not authenticated")
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return ConversationHandler.END
     
     # Show calendar for start date selection
+    print("Creating calendar markup")
+    calendar_markup = calendar.create_calendar()
+    logger.info("Calendar markup created")
+    
     await update.message.reply_text(
         get_message(lang, 'cycle', 'select_date'),
-        reply_markup=calendar.create_calendar()
+        reply_markup=calendar_markup
     )
+    logger.info("Calendar displayed to user")
     return START_DATE
 
 async def handle_calendar_selection(update: Update, context: CallbackContext):
+    print("\n=== Calendar Selection Handler ===")
     query = update.callback_query
+    
     if not query:
+        logger.warning("No callback query received")
+        print("No callback query")
         return START_DATE
 
     try:
-        await query.answer()
-        result = calendar.process_calendar_selection(query)
+        print(f"Received callback data: {query.data}")
+        logger.info(f"Processing calendar callback: {query.data}")
         
-        if isinstance(result, tuple):
-            # Navigation action
-            _, markup = result
-            await query.message.edit_reply_markup(reply_markup=markup)
+        await query.answer()
+        print("Answered callback query")
+        
+        if query.data == "ignore":
+            print("Ignore button pressed")
+            logger.info("Ignore button pressed")
             return START_DATE
             
-        elif result:  # Date selected
-            selected_date = result
+        if query.data.startswith(("prev_", "next_")):
+            print("Navigation button pressed")
+            logger.info(f"Calendar navigation: {query.data}")
+            
+            _, year, month = query.data.split("_")
+            year, month = int(year), int(month)
+            print(f"Navigating to year: {year}, month: {month}")
+            
+            markup = calendar.create_calendar(year, month)
+            print("Created new calendar markup")
+            
+            await query.message.edit_reply_markup(reply_markup=markup)
+            print("Updated calendar display")
+            logger.info(f"Calendar updated to {month}/{year}")
+            return START_DATE
+            
+        if query.data.startswith("date_"):
+            print("Date selection detected")
+            selected_date = query.data.split("_")[1]
+            print(f"Selected date: {selected_date}")
+            logger.info(f"User selected date: {selected_date}")
+            
             context.user_data['start_date'] = selected_date
             lang = context.user_data.get('language', 'en')
             
-            # Create symptoms keyboard
+            print("Creating symptoms keyboard")
             keyboard = []
             for symptom_row in SYMPTOM_OPTIONS[lang]:
                 keyboard.append(symptom_row)
@@ -62,11 +105,17 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
                 one_time_keyboard=False,
                 resize_keyboard=True
             )
+            print("Symptoms keyboard created")
             
-            # Delete calendar message and show confirmation
-            await query.message.delete()
+            try:
+                print("Attempting to delete calendar message")
+                await query.message.delete()
+                print("Calendar message deleted")
+            except Exception as e:
+                print(f"Error deleting calendar message: {e}")
+                logger.error(f"Failed to delete calendar message: {e}")
             
-            # Send confirmation and move to symptoms
+            print("Sending confirmation messages")
             await query.message.reply_text(
                 f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}"
             )
@@ -76,10 +125,13 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
                 reply_markup=markup
             )
             
+            logger.info("Successfully transitioned to symptoms selection")
+            print("=== Calendar Selection Complete ===")
             return SYMPTOMS
             
     except Exception as e:
-        logger.error(f"Error in calendar selection: {e}")
+        print(f"Error in calendar selection: {e}")
+        logger.error(f"Calendar selection error: {str(e)}", exc_info=True)
         
     return START_DATE
 
@@ -247,3 +299,52 @@ add_cycle_conversation = ConversationHandler(
     per_message=True,
     name="add_cycle_conversation"
 )
+
+# Add logging to calendar keyboard class
+class CalendarKeyboard:
+    def create_calendar(self, year=None, month=None):
+        print("\n=== Creating Calendar ===")
+        now = datetime.now()
+        if year is None:
+            year = now.year
+        if month is None:
+            month = now.month
+            
+        print(f"Creating calendar for {year}-{month}")
+        logger.info(f"Creating calendar for {year}-{month}")
+        
+        # ... rest of the create_calendar code ...
+        
+        print("Calendar creation complete")
+        return InlineKeyboardMarkup(keyboard)
+
+    def process_calendar_selection(self, callback_query):
+        print("\n=== Processing Calendar Selection ===")
+        try:
+            data = callback_query.data
+            print(f"Processing callback data: {data}")
+            logger.info(f"Processing calendar callback: {data}")
+            
+            if data == "ignore":
+                print("Ignore button pressed")
+                return None
+                
+            elif data.startswith(("prev_", "next_")):
+                print("Navigation button pressed")
+                _, year, month = data.split("_")
+                year, month = int(year), int(month)
+                print(f"Creating new calendar for {year}-{month}")
+                return None, self.create_calendar(year, month)
+                
+            elif data.startswith("date_"):
+                print("Date selection detected")
+                selected_date = data.split("_")[1]
+                print(f"Selected date: {selected_date}")
+                return selected_date
+                
+        except Exception as e:
+            print(f"Error processing calendar selection: {e}")
+            logger.error(f"Calendar processing error: {str(e)}", exc_info=True)
+            return None
+            
+        return None
