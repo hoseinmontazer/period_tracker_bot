@@ -7,12 +7,11 @@ from telegram.ext import (
 from auth import authenticate_user
 from period import fetch_periods
 from cycle_analysis import fetch_cycle_analysis as cycle_analysis_handler
-from add_cycle import add_cycle_conversation, start_add_cycle
+from add_cycle import add_cycle_conversation
 from utils import load_tokens, save_tokens
 from settings import show_settings_menu, handle_settings
 import config
 from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, SETTINGS, PARTNER_MENU, PARTNER_MESSAGE
-import aiohttp
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
 from partner import (
@@ -268,10 +267,10 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
-    # Add the add_cycle_conversation handler FIRST
-    application.add_handler(add_cycle_conversation)
+    # Add the add_cycle_conversation handler FIRST with higher priority
+    application.add_handler(add_cycle_conversation, group=1)
 
-    # Then add the main conversation handler
+    # Main conversation handler with lower priority
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -285,26 +284,17 @@ def main():
             ],
             LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, login)],
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
-            ACCEPTING_INVITATION: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, accept_invitation)
-            ],
-            SETTINGS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)
-            ],
-            MENU: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
-            ],
-            PARTNER_MENU: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)
-            ],
-            PARTNER_MESSAGE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_message)
-            ],
+            MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
+            SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
+        allow_reentry=True,
     )
 
-    application.add_handler(conv_handler)
+    # Add main conversation handler with lower priority
+    application.add_handler(conv_handler, group=2)
+    
+    # Add standalone command handlers
     application.add_handler(CommandHandler('logout', logout))
 
     application.run_polling()
