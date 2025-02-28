@@ -6,14 +6,16 @@ EN = {
     },
     'menu': {
         'main': "📋 **Main Menu**\nChoose an option:",
-        'track_period': "Track Period",
-        'view_history': "View History",
-        'cycle_analysis': "Cycle Analysis",
-        'add_new_cycle': "Add New Cycle",
-        'logout': "Logout",
-        'language_changed': "Language changed to English",
-        'invitation_partner': 'Generate Partner Invitation',
-        'accept_invitation': 'Accept Invitation Code'
+        'track_period': "📝 Track Period",
+        'view_history': "📅 View History",
+        'cycle_analysis': "📊 Cycle Analysis",
+        'add_new_cycle': "➕ Add New Cycle",
+        'partner_menu': "👥 Partner Menu",
+        'logout': "🚪 Logout",
+        'language_changed': "🌐 Language changed to English",
+        'invitation_partner': '🤝 Generate Partner Invitation',
+        'accept_invitation': '✉️ Accept Invitation Code',
+        'back_to_main': "↩️ Back to Main Menu"
     },
     'auth': {
         'login_required': "⚠️ You need to log in first. Use /start.",
@@ -98,14 +100,16 @@ FA = {
     },
     'menu': {
         'main': "📋 **منوی اصلی**\nیک گزینه را انتخاب کنید:",
-        'track_period': "ثبت دوره",
-        'view_history': "مشاهده تاریخچه",
-        'cycle_analysis': "تحلیل دوره",
-        'add_new_cycle': "افزودن دوره جدید",
-        'logout': "خروج",
-        'language_changed': "زبان به فارسی تغییر کرد",
-        'invitation_partner': 'دعوت از شریک',
-        'accept_invitation': 'پذیرش کد دعوت'
+        'track_period': "📝 ثبت دوره",
+        'view_history': "📅 مشاهده تاریخچه",
+        'cycle_analysis': "📊 تحلیل دوره",
+        'add_new_cycle': "➕ افزودن دوره جدید",
+        'partner_menu': "👥 منوی شریک",
+        'logout': "🚪 خروج",
+        'language_changed': "🌐 زبان به فارسی تغییر کرد",
+        'invitation_partner': '🤝 ایجاد دعوت‌نامه شریک',
+        'accept_invitation': '✉️ پذیرش کد دعوت',
+        'back_to_main': "↩️ بازگشت به منوی اصلی"
     },
     'auth': {
         'login_required': "⚠️ ابتدا باید وارد شوید. از /start استفاده کنید.",
@@ -161,7 +165,7 @@ FA = {
         'back_to_main': "↩️ بازگشت به منوی اصلی"
     },
     'invitation': {
-        'code_generated': "��️ کد دعوت شما: `{}`\nاین کد را با شریک خود به اشتراک بگذارید.",
+        'code_generated': "🎟️ کد دعوت شما: `{}`\nاین کد را با شریک خود به اشتراک بگذارید.",
         'enter_code': "لطفاً کد دعوتی که دریافت کرده‌اید را وارد کنید:",
         'accepted': "✅ دعوت با موفقیت پذیرفته شد!",
         'generation_error': "❌ خطا در تولید کد دعوت. لطفاً دوباره تلاش کنید.",
