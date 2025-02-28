@@ -29,7 +29,10 @@ from partner import (
     handle_partner_message
 )
 from calendar_keyboard import CalendarKeyboard
-from menu_handlers import show_main_menu, handle_menu
+from menu_handlers import (
+    start, show_main_menu, handle_menu, 
+    handle_initial_choice, cancel
+)
 
 # Logging setup
 logging.basicConfig(
@@ -46,63 +49,6 @@ __all__ = ['MENU', 'show_main_menu']
 
 # Add this near the top of the file, after the imports
 calendar = CalendarKeyboard()  # Create global calendar instance
-
-async def start(update: Update, context: CallbackContext) -> int:
-    """Start the bot and check if the user is logged in."""
-    chat_id = str(update.message.chat_id)
-    context.user_data['language'] = context.user_data.get('language', 'en')  # Default to English
-    
-    # Store user_tokens in bot_data
-    context.bot_data['user_tokens'] = user_tokens
-    
-    if chat_id in user_tokens and "access" in user_tokens[chat_id]:
-        return await show_main_menu(update, context)
-
-    # Show login/register options
-    lang = context.user_data.get('language', 'en')
-    reply_keyboard = [
-        [get_message(lang, 'auth', 'register'), get_message(lang, 'auth', 'login')]
-    ]
-    
-    await update.message.reply_text(
-        get_message(lang, 'welcome', 'bot'),
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-    )
-    return REGISTER
-
-async def show_main_menu(update: Update, context: CallbackContext) -> int:
-    """Displays the main menu with available options."""
-    lang = context.user_data.get('language', 'en')
-    
-    reply_keyboard = [
-        [{"text": get_message(lang, 'menu', 'track_period')}, {"text": get_message(lang, 'menu', 'view_history')}],
-        [{"text": get_message(lang, 'menu', 'cycle_analysis')}, {"text": get_message(lang, 'menu', 'add_new_cycle')}],
-        [{"text": get_message(lang, 'menu', 'partner_menu')}],
-        [{"text": get_message(lang, 'settings', 'menu')}]
-    ]
-
-    await update.message.reply_text(
-        get_message(lang, 'menu', 'main'),
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True),
-        parse_mode="Markdown"
-    )
-    return MENU
-
-async def handle_initial_choice(update: Update, context: CallbackContext) -> int:
-    """Handle the initial Register/Login choice."""
-    choice = update.message.text
-    
-    if choice == 'Register':
-        # Clear any existing registration data
-        context.user_data.clear()
-        await update.message.reply_text("Please enter your username:")
-        context.user_data['registration_step'] = 'username'
-        return REGISTER
-    elif choice == 'Login':
-        await update.message.reply_text("Please enter your username:")
-        return LOGIN
-    
-    return REGISTER
 
 async def handle_registration(update: Update, context: CallbackContext) -> int:
     """Handle the registration process step by step."""
@@ -241,39 +187,6 @@ async def cycle_analysis_handler(update: Update, context: CallbackContext) -> in
     await fetch_cycle_analysis(update, access_token)
 
     return MENU  # Return to menu after displaying analysis
-
-async def cancel(update: Update, context: CallbackContext) -> int:
-    """Handle canceling the operation and end the conversation."""
-    await update.message.reply_text("Operation cancelled.")
-    return ConversationHandler.END
-
-async def handle_menu(update: Update, context: CallbackContext) -> int:
-    """Handle menu selections."""
-    text = update.message.text
-    lang = context.user_data.get('language', 'en')
-    
-    if text == get_message(lang, 'menu', 'add_new_cycle'):
-        logger.info("User selected Add New Cycle")
-        # Start the add cycle flow
-        return await start_add_cycle(update, context)
-    elif text == get_message(lang, 'settings', 'menu'):
-        return await show_settings_menu(update, context)
-    elif text == get_message(lang, 'menu', 'partner_menu'):
-        return await show_partner_menu(update, context)
-    elif text == get_message(lang, 'menu', 'track_period'):
-        return await view_history(update, context)
-    elif text == get_message(lang, 'menu', 'view_history'):
-        return await view_history(update, context)
-    elif text == get_message(lang, 'menu', 'cycle_analysis'):
-        return await cycle_analysis_handler(update, context)
-    elif text == get_message(lang, 'menu', 'invitation_partner'):
-        return await generate_invitation_code(update, context)
-    elif text == get_message(lang, 'menu', 'accept_invitation'):
-        return await start_accept_invitation(update, context)
-    elif text == get_message(lang, 'menu', 'logout'):
-        return await logout(update, context)
-    
-    return MENU  # Ensure this returns a valid state constant
 
 def main():
     """Start the Telegram bot."""

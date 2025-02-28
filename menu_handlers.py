@@ -1,7 +1,33 @@
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import CallbackContext
 from languages import get_message
-from states import MENU
+from states import MENU, REGISTER, LOGIN, PERIOD_TRACKING, ConversationHandler
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def start(update: Update, context: CallbackContext) -> int:
+    """Start the bot and check if the user is logged in."""
+    chat_id = str(update.message.chat_id)
+    context.user_data['language'] = context.user_data.get('language', 'en')  # Default to English
+    
+    # Get user_tokens from bot_data
+    user_tokens = context.bot_data.get('user_tokens', {})
+    
+    if chat_id in user_tokens and "access" in user_tokens[chat_id]:
+        return await show_main_menu(update, context)
+
+    # Show login/register options
+    lang = context.user_data.get('language', 'en')
+    reply_keyboard = [
+        [get_message(lang, 'auth', 'register'), get_message(lang, 'auth', 'login')]
+    ]
+    
+    await update.message.reply_text(
+        get_message(lang, 'welcome', 'bot'),
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+    )
+    return REGISTER
 
 async def show_main_menu(update: Update, context: CallbackContext) -> int:
     """Display the main menu."""
@@ -48,5 +74,35 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     elif text == get_message(lang, 'settings', 'menu'):
         from settings import show_settings_menu
         return await show_settings_menu(update, context)
+    elif text == get_message(lang, 'menu', 'logout'):
+        from auth import logout
+        return await logout(update, context)
     
-    return MENU 
+    return MENU
+
+async def handle_initial_choice(update: Update, context: CallbackContext) -> int:
+    """Handle the initial Register/Login choice."""
+    choice = update.message.text
+    lang = context.user_data.get('language', 'en')
+    
+    if choice == get_message(lang, 'auth', 'register'):
+        # Clear any existing registration data
+        context.user_data.clear()
+        context.user_data['language'] = lang
+        await update.message.reply_text(get_message(lang, 'auth', 'enter_username'))
+        context.user_data['registration_step'] = 'username'
+        return REGISTER
+    elif choice == get_message(lang, 'auth', 'login'):
+        await update.message.reply_text(get_message(lang, 'auth', 'enter_username'))
+        return LOGIN
+    
+    return REGISTER
+
+async def cancel(update: Update, context: CallbackContext) -> int:
+    """Cancel and end the conversation."""
+    lang = context.user_data.get('language', 'en')
+    await update.message.reply_text(
+        get_message(lang, 'errors', 'operation_cancelled'),
+        reply_markup=ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END 
