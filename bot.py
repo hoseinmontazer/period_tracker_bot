@@ -10,7 +10,7 @@ from cycle_analysis import fetch_cycle_analysis
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
-from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION
+from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, SETTINGS
 import aiohttp
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
@@ -58,8 +58,7 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
-        [get_message(lang, 'menu', ' '), get_message(lang, 'menu', 'accept_invitation')],
-        [get_message(lang, 'settings', 'change_language')],
+        [get_message(lang, 'settings', 'menu')],  # Settings option
         [get_message(lang, 'menu', 'logout')]
     ]
 
@@ -280,6 +279,9 @@ def main():
             ],
             MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
+            ],
+            SETTINGS: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
