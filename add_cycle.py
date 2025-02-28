@@ -29,47 +29,66 @@ async def start_add_cycle(update, context):
     return START_DATE
 
 async def handle_calendar_selection(update: Update, context: CallbackContext):
-    # Handle both callback queries and messages
     if update.callback_query:
         query = update.callback_query
         await query.answer()
         
-        if query.data.startswith("date_"):  # Direct date selection
-            selected_date = query.data.split("_")[1]  # Get the date from callback_data
-            context.user_data['start_date'] = selected_date
+        if query.data == "ignore":
+            return START_DATE
             
-            # Get user's language
+        if query.data.startswith("date_"):
+            selected_date = query.data.split("_")[1]
+            context.user_data['start_date'] = selected_date
             lang = context.user_data.get('language', 'en')
             
-            # Initialize empty symptoms list
+            # Initialize symptoms list
             context.user_data['symptoms'] = []
             
-            # Move to symptoms selection
-            await query.message.edit_text(f"Selected date: {selected_date}")
+            # Create symptoms keyboard
+            keyboard = []
+            for symptom_row in SYMPTOM_OPTIONS[lang]:
+                keyboard.append(symptom_row)
+            keyboard.append([get_message(lang, 'buttons', 'done')])
+            
+            markup = ReplyKeyboardMarkup(
+                keyboard,
+                one_time_keyboard=False,
+                resize_keyboard=True
+            )
+            
+            # Send confirmation and move to symptoms
+            await query.message.reply_text(
+                f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}",
+            )
+            
             await query.message.reply_text(
                 get_message(lang, 'cycle', 'select_symptoms'),
-                reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS[lang], one_time_keyboard=False)
+                reply_markup=markup
             )
+            
+            # Try to delete the calendar message
+            try:
+                await query.message.delete()
+            except:
+                pass
+                
             return SYMPTOMS
             
-        elif query.data.startswith(("prev_", "next_")):  # Calendar navigation
-            selected_date = calendar.process_calendar_selection(query)
-            if isinstance(selected_date, tuple):
-                _, markup = selected_date
-                await query.message.edit_reply_markup(reply_markup=markup)
-                return START_DATE
+        elif query.data.startswith(("prev_", "next_")):
+            _, year, month = query.data.split("_")
+            markup = calendar.create_calendar(int(year), int(month))
+            await query.message.edit_reply_markup(reply_markup=markup)
+            return START_DATE
     
     return START_DATE
 
 async def handle_symptoms(update, context):
     text = update.message.text
+    lang = context.user_data.get('language', 'en')
     
     # Initialize symptoms list if it doesn't exist
     if 'symptoms' not in context.user_data:
         context.user_data['symptoms'] = []
-    
-    # Get user's language
-    lang = context.user_data.get('language', 'en')
     
     if text == get_message(lang, 'buttons', 'done'):
         # Join all symptoms with commas
@@ -79,29 +98,35 @@ async def handle_symptoms(update, context):
         # Initialize empty medications list
         context.user_data['medications'] = []
         
-        # Move to medication with language-specific options
+        # Create medication keyboard
+        keyboard = []
+        for med_row in MEDICATION_OPTIONS[lang]:
+            keyboard.append(med_row)
+        keyboard.append([get_message(lang, 'buttons', 'done')])
+        
+        markup = ReplyKeyboardMarkup(
+            keyboard,
+            one_time_keyboard=False,
+            resize_keyboard=True
+        )
+        
+        # Move to medication selection
         await update.message.reply_text(
             get_message(lang, 'cycle', 'select_medications'),
-            reply_markup=ReplyKeyboardMarkup(MEDICATION_OPTIONS[lang], one_time_keyboard=False)
+            reply_markup=markup
         )
         return MEDICATION
-        
-    elif text == 'Write Custom Symptoms':
+    
+    # Add the symptom to the list if it's not already there
+    if text not in context.user_data['symptoms']:
+        context.user_data['symptoms'].append(text)
         await update.message.reply_text(
-            "Please type your symptoms and press 'Done' when finished:",
-            reply_markup=ReplyKeyboardMarkup([['Done']], one_time_keyboard=True)
+            f"{get_message(lang, 'cycle', 'symptom_added')}: {text}\n"
+            f"{get_message(lang, 'cycle', 'current_symptoms')}: {', '.join(context.user_data['symptoms'])}",
+            reply_markup=update.message.reply_markup
         )
-        return SYMPTOMS
-        
-    elif text not in ['Done', 'Write Custom Symptoms']:
-        # Add the symptom to the list if it's not already there
-        if text not in context.user_data['symptoms']:
-            context.user_data['symptoms'].append(text)
-            await update.message.reply_text(
-                f"Added: {text}\nSelected symptoms: {', '.join(context.user_data['symptoms'])}\n\nSelect more or press 'Done'",
-                reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS, one_time_keyboard=False)
-            )
-        return SYMPTOMS
+    
+    return SYMPTOMS
 
 async def save_cycle_to_api(chat_id, cycle_data, user_tokens):
     """Save cycle data to the API"""
@@ -212,11 +237,15 @@ add_cycle_conversation = ConversationHandler(
     states={
         START_DATE: [
             CallbackQueryHandler(handle_calendar_selection),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_calendar_selection)
         ],
-        SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],
-        MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],
+        SYMPTOMS: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)
+        ],
+        MEDICATION: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)
+        ],
     },
     fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],
-    allow_reentry=True
+    allow_reentry=True,
+    per_chat=True
 )
