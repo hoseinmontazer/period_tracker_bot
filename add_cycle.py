@@ -8,7 +8,7 @@ import aiohttp
 from states import START_DATE, SYMPTOMS, MEDICATION, MENU
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from calendar_keyboard import CalendarKeyboard
-from menu_handlers import handle_menu  # Changed from bot to menu_handlers
+from menu_handlers import handle_menu
 
 logger = logging.getLogger(__name__)
 calendar = CalendarKeyboard()
