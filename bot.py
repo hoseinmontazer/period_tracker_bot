@@ -58,7 +58,7 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
-        [get_message(lang, 'menu', 'invitation_partner'), get_message(lang, 'menu', 'accept_invitation')],
+        [get_message(lang, 'menu', ' '), get_message(lang, 'menu', 'accept_invitation')],
         [get_message(lang, 'settings', 'change_language')],
         [get_message(lang, 'menu', 'logout')]
     ]
@@ -233,15 +233,11 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     """Handle menu selections."""
     text = update.message.text
     lang = context.user_data.get('language', 'en')
-
-    # Handle language change
-    if text in ['🇬🇧 English', '🇮🇷 فارسی']:
-        new_lang = 'en' if text == '🇬🇧 English' else 'fa'
-        context.user_data['language'] = new_lang
-        return await show_main_menu(update, context)
-
-    # Handle other menu options
-    if text == get_message(lang, 'menu', 'track_period'):
+    
+    if text == get_message(lang, 'settings', 'change_language'):
+        from settings import show_settings_menu
+        return await show_settings_menu(update, context)
+    elif text == get_message(lang, 'menu', 'track_period'):
         return await view_history(update, context)
     elif text == get_message(lang, 'menu', 'view_history'):
         return await view_history(update, context)
@@ -255,7 +251,7 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         return await start_accept_invitation(update, context)
     elif text == get_message(lang, 'menu', 'logout'):
         return await logout(update, context)
-
+    
     return MENU
 
 def main():
