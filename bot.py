@@ -35,6 +35,9 @@ user_tokens = load_tokens()
 # At the top of the file, add MENU to the exports
 __all__ = ['MENU', 'show_main_menu']
 
+# Add this near the top of the file, after the imports
+calendar = CalendarKeyboard()  # Create global calendar instance
+
 async def start(update: Update, context: CallbackContext) -> int:
     """Start the bot and check if the user is logged in."""
     chat_id = str(update.message.chat_id)
@@ -279,9 +282,6 @@ async def calendar_callback(update: Update, context: CallbackContext):
 def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
-
-    # Create calendar instance
-    calendar = CalendarKeyboard()
 
     # Add the add_cycle_conversation handler FIRST
     application.add_handler(add_cycle_conversation)
