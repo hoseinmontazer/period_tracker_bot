@@ -74,15 +74,15 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     reply_keyboard = [
-        [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
-        [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
-        [get_message(lang, 'menu', 'partner_menu')],  # Add Partner Menu option
-        [get_message(lang, 'settings', 'menu')]
+        [{"text": get_message(lang, 'menu', 'track_period')}, {"text": get_message(lang, 'menu', 'view_history')}],
+        [{"text": get_message(lang, 'menu', 'cycle_analysis')}, {"text": get_message(lang, 'menu', 'add_new_cycle')}],
+        [{"text": get_message(lang, 'menu', 'partner_menu')}],
+        [{"text": get_message(lang, 'settings', 'menu')}]
     ]
 
     await update.message.reply_text(
         get_message(lang, 'menu', 'main'),
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True),
         parse_mode="Markdown"
     )
     return MENU
