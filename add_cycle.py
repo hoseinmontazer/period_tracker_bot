@@ -41,14 +41,13 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
         # Initialize empty symptoms list
         context.user_data['symptoms'] = []
         
-        # Format SYMPTOM_OPTIONS correctly as a list of lists
-        keyboard = [[option] for option in SYMPTOM_OPTIONS]
-        keyboard.extend([['Write Custom Symptoms'], ['Done']])
+        # Get user's language
+        lang = context.user_data.get('language', 'en')
         
-        # Move to symptoms selection
+        # Move to symptoms selection using language-specific options
         await query.message.reply_text(
-            "Select your symptoms (you can select multiple):",
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=False)
+            get_message(lang, 'cycle', 'select_symptoms'),
+            reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS[lang], one_time_keyboard=False)
         )
         return SYMPTOMS
     else:  # Navigation through calendar
