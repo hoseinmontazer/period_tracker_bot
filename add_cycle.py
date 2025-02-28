@@ -49,51 +49,51 @@ async def start_add_cycle(update, context):
     return START_DATE
 
 async def handle_calendar_selection(update: Update, context: CallbackContext):
-    print("\n=== Calendar Selection Handler ===")
+    print("\n=== Calendar Selection Handler Started ===")
     query = update.callback_query
     
     if not query:
-        logger.warning("No callback query received")
-        print("No callback query")
+        print("ERROR: No callback query received")
         return START_DATE
 
     try:
         print(f"Received callback data: {query.data}")
-        logger.info(f"Processing calendar callback: {query.data}")
         
+        # Always answer the callback query first
         await query.answer()
-        print("Answered callback query")
+        print("Callback query answered")
         
         if query.data == "ignore":
-            print("Ignore button pressed")
-            logger.info("Ignore button pressed")
+            print("Ignore button pressed - returning to START_DATE")
             return START_DATE
             
         if query.data.startswith(("prev_", "next_")):
-            print("Navigation button pressed")
-            logger.info(f"Calendar navigation: {query.data}")
-            
+            print(f"Navigation button pressed: {query.data}")
             _, year, month = query.data.split("_")
             year, month = int(year), int(month)
-            print(f"Navigating to year: {year}, month: {month}")
+            print(f"Creating calendar for year: {year}, month: {month}")
             
             markup = calendar.create_calendar(year, month)
-            print("Created new calendar markup")
+            print("New calendar markup created")
             
-            await query.message.edit_reply_markup(reply_markup=markup)
-            print("Updated calendar display")
-            logger.info(f"Calendar updated to {month}/{year}")
+            try:
+                await query.message.edit_reply_markup(reply_markup=markup)
+                print("Calendar display updated successfully")
+            except Exception as e:
+                print(f"Error updating calendar: {e}")
             return START_DATE
             
         if query.data.startswith("date_"):
-            print("Date selection detected")
+            print(f"Date selection detected: {query.data}")
             selected_date = query.data.split("_")[1]
-            print(f"Selected date: {selected_date}")
-            logger.info(f"User selected date: {selected_date}")
+            print(f"Parsed selected date: {selected_date}")
             
+            # Store the date
             context.user_data['start_date'] = selected_date
             lang = context.user_data.get('language', 'en')
+            print(f"Stored date in context, language is: {lang}")
             
+            # Create symptoms keyboard
             print("Creating symptoms keyboard")
             keyboard = []
             for symptom_row in SYMPTOM_OPTIONS[lang]:
@@ -108,31 +108,37 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
             print("Symptoms keyboard created")
             
             try:
+                # First send the new messages
+                print("Sending confirmation message")
+                await query.message.reply_text(
+                    f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}"
+                )
+                print("Confirmation message sent")
+                
+                print("Sending symptoms prompt")
+                await query.message.reply_text(
+                    get_message(lang, 'cycle', 'select_symptoms'),
+                    reply_markup=markup
+                )
+                print("Symptoms prompt sent")
+                
+                # Then try to delete the calendar
                 print("Attempting to delete calendar message")
                 await query.message.delete()
-                print("Calendar message deleted")
+                print("Calendar message deleted successfully")
+                
             except Exception as e:
-                print(f"Error deleting calendar message: {e}")
-                logger.error(f"Failed to delete calendar message: {e}")
+                print(f"Error in message handling: {e}")
+                logger.error(f"Message handling error: {e}", exc_info=True)
             
-            print("Sending confirmation messages")
-            await query.message.reply_text(
-                f"{get_message(lang, 'cycle', 'date_selected')}: {selected_date}"
-            )
-            
-            await query.message.reply_text(
-                get_message(lang, 'cycle', 'select_symptoms'),
-                reply_markup=markup
-            )
-            
-            logger.info("Successfully transitioned to symptoms selection")
-            print("=== Calendar Selection Complete ===")
+            print("=== Transitioning to SYMPTOMS state ===")
             return SYMPTOMS
             
     except Exception as e:
-        print(f"Error in calendar selection: {e}")
-        logger.error(f"Calendar selection error: {str(e)}", exc_info=True)
+        print(f"ERROR in calendar selection handler: {e}")
+        logger.error("Calendar selection error", exc_info=True)
         
+    print("=== Calendar Selection Handler Completed ===")
     return START_DATE
 
 async def handle_symptoms(update: Update, context: CallbackContext):

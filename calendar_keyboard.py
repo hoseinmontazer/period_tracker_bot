@@ -78,25 +78,34 @@ class CalendarKeyboard:
         return InlineKeyboardMarkup(keyboard)
 
     def process_calendar_selection(self, callback_query):
-        """
-        Process the callback_query. This method generates a new calendar if forward or
-        backward is pressed. This method should return either a datetime.date object or None
-        """
+        print("\n=== Calendar Keyboard Processing Selection ===")
         try:
             data = callback_query.data
+            print(f"Processing callback data: {data}")
+            
             if data == "ignore":
+                print("Ignore button pressed")
                 return None
                 
-            elif data.startswith("prev_") or data.startswith("next_"):
+            elif data.startswith(("prev_", "next_")):
+                print(f"Navigation button pressed: {data}")
                 _, year, month = data.split("_")
                 year, month = int(year), int(month)
-                return None, self.create_calendar(year, month)
+                print(f"Creating new calendar for {year}-{month}")
+                new_markup = self.create_calendar(year, month)
+                print("New calendar markup created")
+                return None, new_markup
                 
             elif data.startswith("date_"):
-                return data.split("_")[1]
+                print(f"Date selection detected: {data}")
+                selected_date = data.split("_")[1]
+                print(f"Returning selected date: {selected_date}")
+                return selected_date
                 
-        except (IndexError, ValueError) as e:
-            logger.error(f"Error processing calendar selection: {e}")
+        except Exception as e:
+            print(f"ERROR in calendar keyboard processing: {e}")
+            logger.error("Calendar processing error", exc_info=True)
             return None
             
+        print("No matching callback data pattern found")
         return None 
