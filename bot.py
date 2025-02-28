@@ -32,7 +32,10 @@ async def start(update: Update, context: CallbackContext) -> int:
     """Start the bot and check if the user is logged in."""
     chat_id = str(update.message.chat_id)
     context.user_data['language'] = context.user_data.get('language', 'en')  # Default to English
-
+    
+    # Store user_tokens in bot_data
+    context.bot_data['user_tokens'] = user_tokens
+    
     if chat_id in user_tokens and "access" in user_tokens[chat_id]:
         return await show_main_menu(update, context)
 
@@ -174,6 +177,8 @@ async def authenticate(update: Update, context: CallbackContext) -> int:
     if token:
         user_tokens[chat_id] = {"access": token}
         save_tokens(user_tokens)
+        # Update bot_data with new tokens
+        context.bot_data['user_tokens'] = user_tokens
         return await show_main_menu(update, context)
 
     await update.message.reply_text("❌ Login failed. Please try again.")
@@ -186,6 +191,8 @@ async def logout(update: Update, context: CallbackContext) -> int:
     if chat_id in user_tokens:
         del user_tokens[chat_id]
         save_tokens(user_tokens)
+        # Update bot_data after logout
+        context.bot_data['user_tokens'] = user_tokens
         await update.message.reply_text("You have been logged out. Use /start to log in again.")
     else:
         await update.message.reply_text("You are not logged in.")
