@@ -252,9 +252,10 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     if text == get_message(lang, 'menu', 'add_new_cycle'):
-        # End the main conversation before starting the add_cycle conversation
+        logger.info("User selected Add New Cycle")
+        # End the main conversation
         await start_add_cycle(update, context)
-        return ConversationHandler.END  # End main conversation
+        return ConversationHandler.END
     elif text == get_message(lang, 'settings', 'menu'):
         return await show_settings_menu(update, context)
     elif text == get_message(lang, 'menu', 'partner_menu'):
@@ -278,7 +279,7 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
-    # Add the add_cycle_conversation handler with highest priority
+    # Add the add_cycle_conversation handler FIRST with highest priority
     application.add_handler(add_cycle_conversation, group=0)
 
     # Main conversation handler with lower priority
@@ -305,11 +306,30 @@ def main():
 
     # Add main conversation handler with lower priority
     application.add_handler(conv_handler, group=1)
+
+    # Add error handler
+    application.add_error_handler(error_handler)
     
     # Add standalone command handlers
     application.add_handler(CommandHandler('logout', logout))
 
+    logger.info("Bot started")
     application.run_polling()
+
+async def error_handler(update: Update, context: CallbackContext) -> None:
+    """Log Errors caused by Updates."""
+    logger.error("Exception while handling an update:", exc_info=context.error)
+    
+    # Log the error details
+    if update:
+        if update.message:
+            chat_id = update.message.chat_id
+            message_text = update.message.text
+            logger.error(f"Error in chat {chat_id}, message: {message_text}")
+        elif update.callback_query:
+            chat_id = update.callback_query.message.chat_id
+            callback_data = update.callback_query.data
+            logger.error(f"Error in chat {chat_id}, callback: {callback_data}")
 
 if __name__ == "__main__":
     main()
