@@ -135,12 +135,13 @@ async def handle_calendar_selection(update: Update, context: CallbackContext) ->
     if selected_date is None:
         return START_DATE
     
-    context.user_data['start_date'] = selected_date.strftime("%Y-%m-%d")
+    # The selected_date is already in YYYY-MM-DD format, no need for strftime
+    context.user_data['start_date'] = selected_date
     return await submit_cycle(update, context)
 
 async def submit_cycle(update: Update, context: CallbackContext) -> int:
     """Submit the cycle data to the API."""
-    chat_id = str(update.callback_query.message.chat_id)  # Updated to use callback_query
+    chat_id = str(update.callback_query.message.chat_id)
     user_tokens = context.bot_data.get('user_tokens', {})
     access_token = user_tokens.get(chat_id, {}).get('access')
     
@@ -152,7 +153,7 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
         async with aiohttp.ClientSession() as session:
             headers = {'Authorization': f'Bearer {access_token}'}
             data = {
-                'start_date': context.user_data['start_date'],
+                'start_date': context.user_data['start_date'],  # Already in YYYY-MM-DD format
                 'symptoms': ','.join(context.user_data.get('symptoms', [])),
                 'medication': ','.join(context.user_data.get('medication', []))
             }
@@ -164,18 +165,18 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
             ) as response:
                 if response.status == 201:
                     await update.callback_query.message.reply_text(
-                        get_message(context.user_data.get('language', 'en'), 'cycle', 'add_success'),
+                        get_message(context.user_data.get('language', 'en'), 'cycle', 'save_success'),
                         reply_markup=ReplyKeyboardRemove()
                     )
                 else:
                     await update.callback_query.message.reply_text(
-                        get_message(context.user_data.get('language', 'en'), 'cycle', 'add_error')
+                        get_message(context.user_data.get('language', 'en'), 'cycle', 'save_failed')
                     )
     
     except Exception as e:
         logger.error(f"Error submitting cycle: {e}")
         await update.callback_query.message.reply_text(
-            get_message(context.user_data.get('language', 'en'), 'cycle', 'add_error')
+            get_message(context.user_data.get('language', 'en'), 'cycle', 'save_failed')
         )
     
     return ConversationHandler.END
