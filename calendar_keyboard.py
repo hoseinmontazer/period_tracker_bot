@@ -76,5 +76,6 @@ class CalendarKeyboard:
             return data.split("_")[1]  # Returns YYYY-MM-DD
         elif data.startswith(("prev_", "next_")):
             _, year, month = data.split("_")
-            return self.create_calendar(int(year), int(month))
+            # Return None to indicate no date was selected, but update the calendar
+            return None, self.create_calendar(int(year), int(month))
         return None 

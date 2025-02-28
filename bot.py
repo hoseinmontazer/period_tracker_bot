@@ -20,6 +20,7 @@ from partner import (
     handle_partner_menu, 
     handle_partner_message
 )
+from calendar_keyboard import CalendarKeyboard
 
 # Logging setup
 logging.basicConfig(
@@ -259,6 +260,21 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         return await logout(update, context)
     
     return MENU
+
+async def calendar_callback(update: Update, context: CallbackContext):
+    query = update.callback_query
+    result = calendar.process_calendar_selection(query)
+    
+    if isinstance(result, tuple):
+        # Navigation action
+        _, markup = result
+        await query.message.edit_reply_markup(reply_markup=markup)
+    elif result:
+        # Date selected
+        await query.message.reply_text(f"You selected: {result}")
+        # Handle the date selection
+    
+    await query.answer()
 
 def main():
     """Start the Telegram bot."""
