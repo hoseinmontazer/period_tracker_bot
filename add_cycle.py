@@ -39,11 +39,10 @@ async def start_add_cycle(update, context):
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return ConversationHandler.END
     
-    # Show calendar for start date selection
-    print("Creating calendar markup")
-    from bot import calendar  # Import the global calendar instance
+    # Create calendar instance here instead of importing from bot
+    calendar = CalendarKeyboard()
     calendar_markup = calendar.create_calendar()
-    logger.info("Calendar markup created")
+    context.user_data['calendar'] = calendar  # Store calendar instance in user_data
     
     await update.message.reply_text(
         get_message(lang, 'cycle', 'select_date'),
@@ -69,7 +68,11 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
         await query.answer()
         print("Callback query answered")
         
-        from bot import calendar  # Import the global calendar instance
+        # Get calendar instance from user_data
+        calendar = context.user_data.get('calendar')
+        if not calendar:
+            calendar = CalendarKeyboard()
+            context.user_data['calendar'] = calendar
         
         # Process the selection using calendar keyboard's method
         result = calendar.process_calendar_selection(query)

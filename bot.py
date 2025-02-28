@@ -272,7 +272,7 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     elif text == get_message(lang, 'menu', 'logout'):
         return await logout(update, context)
     
-    return MENU
+    return MENU  # Ensure this returns a valid state constant
 
 def main():
     """Start the Telegram bot."""
