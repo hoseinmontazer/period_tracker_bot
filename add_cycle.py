@@ -130,7 +130,7 @@ async def handle_medication(update: Update, context: CallbackContext) -> int:
 async def handle_calendar_selection(update: Update, context: CallbackContext) -> int:
     """Handle the calendar date selection and submit the cycle data."""
     query = update.callback_query
-    selected_date = calendar.handle_calendar_selection(query)
+    selected_date = calendar.process_calendar_selection(query)
     
     if selected_date is None:
         return START_DATE
