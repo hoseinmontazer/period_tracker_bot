@@ -1,7 +1,7 @@
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, ConversationHandler
 from languages import get_message
-from states import MENU, REGISTER, LOGIN, PERIOD_TRACKING, ConversationHandler
+from states import MENU, REGISTER, LOGIN, PERIOD_TRACKING
 import logging
 
 logger = logging.getLogger(__name__)
