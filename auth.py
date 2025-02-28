@@ -11,29 +11,60 @@ from menu_handlers import show_main_menu
 logger = logging.getLogger(__name__)
 
 async def authenticate_user(username, password):
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{BASE_URL}/api/auth/jwt/create/", data={"username": username, "password": password})
+    """Authenticate user and get access token."""
+    logger.info(f"Attempting to authenticate user: {username}")
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{BASE_URL}/api/auth/jwt/create/", 
+                data={
+                    "username": username, 
+                    "password": password
+                }
+            )
+            
+            logger.info(f"Auth response status: {response.status_code}")
+            if response.status_code == 200:
+                json_response = response.json()
+                logger.info("Authentication successful")
+                return json_response.get("access")
+            else:
+                logger.error(f"Authentication failed: {response.text}")
+                return None
 
-        if response.status_code == 200:
-            json_response = response.json()
-            return json_response.get("access")
-
+    except Exception as e:
+        logger.error(f"Authentication error: {str(e)}")
         return None
 
 async def refresh_token(chat_id, user_tokens):
     """Refresh the access token using the refresh token."""
     if chat_id not in user_tokens or "refresh" not in user_tokens[chat_id]:
+        logger.warning(f"No refresh token found for chat_id: {chat_id}")
         return None
 
     refresh_token = user_tokens[chat_id]["refresh"]
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{BASE_URL}/api/auth/jwt/refresh/", data={"refresh": refresh_token})
+    logger.info(f"Attempting to refresh token for chat_id: {chat_id}")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{BASE_URL}/api/auth/jwt/refresh/", 
+                data={"refresh": refresh_token}
+            )
 
-        if response.status_code == 200:
-            new_access = response.json().get("access")
-            user_tokens[chat_id]["access"] = new_access
-            save_tokens(user_tokens)
-            return new_access
+            logger.info(f"Refresh response status: {response.status_code}")
+            if response.status_code == 200:
+                new_access = response.json().get("access")
+                user_tokens[chat_id]["access"] = new_access
+                save_tokens(user_tokens)
+                logger.info("Token refresh successful")
+                return new_access
+            else:
+                logger.error(f"Token refresh failed: {response.text}")
+                return None
+
+    except Exception as e:
+        logger.error(f"Token refresh error: {str(e)}")
         return None
 
 async def handle_registration(update: Update, context: CallbackContext) -> int:

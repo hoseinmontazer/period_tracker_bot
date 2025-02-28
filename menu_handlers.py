@@ -3,22 +3,48 @@ from telegram.ext import CallbackContext, ConversationHandler
 from languages import get_message
 from states import MENU, REGISTER, LOGIN, PERIOD_TRACKING
 import logging
+import httpx
 
 logger = logging.getLogger(__name__)
 
 async def start(update: Update, context: CallbackContext) -> int:
     """Start the bot and check if the user is logged in."""
     chat_id = str(update.message.chat_id)
-    context.user_data['language'] = context.user_data.get('language', 'en')  # Default to English
+    context.user_data['language'] = context.user_data.get('language', 'en')
+    lang = context.user_data['language']
+    
+    logger.info(f"Starting bot for chat_id: {chat_id}")
     
     # Get user_tokens from bot_data
-    user_tokens = context.bot_data.get('user_tokens', {})
+    user_tokens = load_tokens()
     
+    # Check if user has valid token
     if chat_id in user_tokens and "access" in user_tokens[chat_id]:
-        return await show_main_menu(update, context)
-
-    # Show login/register options
-    lang = context.user_data.get('language', 'en')
+        logger.info(f"Found existing token for chat_id: {chat_id}")
+        # Try to use the token to verify it's still valid
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{BASE_URL}/api/users/me/",
+                    headers={"Authorization": f"Bearer {user_tokens[chat_id]['access']}"}
+                )
+                
+                if response.status_code == 200:
+                    logger.info("Token is valid, showing main menu")
+                    return await show_main_menu(update, context)
+                else:
+                    logger.warning("Token is invalid, trying refresh")
+                    # Try to refresh the token
+                    new_token = await refresh_token(chat_id, user_tokens)
+                    if new_token:
+                        logger.info("Token refreshed successfully")
+                        return await show_main_menu(update, context)
+                    
+        except Exception as e:
+            logger.error(f"Error checking token: {str(e)}")
+    
+    # If no valid token found, show login/register options
+    logger.info("No valid token found, showing login/register options")
     reply_keyboard = [
         [get_message(lang, 'auth', 'register'), get_message(lang, 'auth', 'login')]
     ]
