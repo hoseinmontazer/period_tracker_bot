@@ -29,32 +29,33 @@ async def start_add_cycle(update, context):
     return START_DATE
 
 async def handle_calendar_selection(update: Update, context: CallbackContext):
-    query = update.callback_query
-    await query.answer()
-    
-    selected_date = calendar.process_calendar_selection(query)
-    
-    if isinstance(selected_date, tuple):  # Navigation through calendar
-        _, markup = selected_date
-        await query.message.edit_reply_markup(reply_markup=markup)
-        return START_DATE
-    
-    if selected_date:  # Date was selected
-        context.user_data['start_date'] = selected_date
-        await query.message.edit_text(f"Selected date: {selected_date}")
+    # Handle both callback queries and messages
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        selected_date = calendar.process_calendar_selection(query)
         
-        # Initialize empty symptoms list
-        context.user_data['symptoms'] = []
+        if isinstance(selected_date, tuple):  # Navigation through calendar
+            _, markup = selected_date
+            await query.message.edit_reply_markup(reply_markup=markup)
+            return START_DATE
         
-        # Get user's language
-        lang = context.user_data.get('language', 'en')
-        
-        # Move to symptoms selection using language-specific options
-        await query.message.reply_text(
-            get_message(lang, 'cycle', 'select_symptoms'),
-            reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS[lang], one_time_keyboard=False)
-        )
-        return SYMPTOMS
+        if selected_date:  # Date was selected
+            context.user_data['start_date'] = selected_date
+            
+            # Get user's language
+            lang = context.user_data.get('language', 'en')
+            
+            # Initialize empty symptoms list
+            context.user_data['symptoms'] = []
+            
+            # Move to symptoms selection
+            await query.message.edit_text(f"Selected date: {selected_date}")
+            await query.message.reply_text(
+                get_message(lang, 'cycle', 'select_symptoms'),
+                reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS[lang], one_time_keyboard=False)
+            )
+            return SYMPTOMS
     
     return START_DATE
 
