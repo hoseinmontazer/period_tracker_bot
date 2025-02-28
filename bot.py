@@ -7,13 +7,19 @@ from telegram.ext import (
 from auth import authenticate_user
 from period import fetch_periods
 from cycle_analysis import fetch_cycle_analysis as cycle_analysis_handler
-from add_cycle import add_cycle_conversation, start_add_cycle
+from add_cycle import (
+    add_cycle_conversation, 
+    start_add_cycle,
+    handle_calendar_selection,
+    handle_symptoms,
+    handle_medication
+)
 from utils import load_tokens, save_tokens
 from settings import show_settings_menu, handle_settings
 import config
 from states import (
     REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION, 
-    SETTINGS, START_DATE, SYMPTOMS, MEDICATION  # Add these states
+    SETTINGS, START_DATE, SYMPTOMS, MEDICATION
 )
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
@@ -271,7 +277,7 @@ def main():
     """Start the Telegram bot."""
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
-    # Add the add_cycle_conversation handler with its own states
+    # Add the add_cycle_conversation handler ONLY
     application.add_handler(add_cycle_conversation, group=1)
 
     # Main conversation handler
@@ -290,14 +296,10 @@ def main():
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
             MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
             SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],
-            # Add these states to handle calendar transitions
-            START_DATE: [CallbackQueryHandler(handle_calendar_selection)],
-            SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],
-            MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
         allow_reentry=True,
-        name="main_conversation"  # Add a name to distinguish it
+        name="main_conversation"
     )
 
     # Add main conversation handler

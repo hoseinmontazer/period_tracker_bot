@@ -247,5 +247,6 @@ add_cycle_conversation = ConversationHandler(
     },
     fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)],
     allow_reentry=True,
-    per_chat=True
+    per_chat=True,
+    per_message=True
 )
