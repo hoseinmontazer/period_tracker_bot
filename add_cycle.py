@@ -5,9 +5,10 @@ from telegram.ext import (
     filters, CommandHandler, CallbackQueryHandler
 )
 import aiohttp
-from states import START_DATE, SYMPTOMS, MEDICATION
+from states import START_DATE, SYMPTOMS, MEDICATION, MENU
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from calendar_keyboard import CalendarKeyboard
+from bot import handle_menu  # Add this import at the top of the file
 
 logger = logging.getLogger(__name__)
 calendar = CalendarKeyboard()
@@ -130,13 +131,19 @@ async def handle_medication(update: Update, context: CallbackContext) -> int:
 async def handle_calendar_selection(update: Update, context: CallbackContext) -> int:
     """Handle the calendar date selection and submit the cycle data."""
     query = update.callback_query
-    selected_date = calendar.process_calendar_selection(query)
+    result = calendar.process_calendar_selection(query)
     
-    if selected_date is None:
+    if isinstance(result, tuple):
+        # Navigation was selected, update the calendar
+        _, new_markup = result
+        await query.message.edit_reply_markup(reply_markup=new_markup)
         return START_DATE
     
-    # The selected_date is already in YYYY-MM-DD format, no need for strftime
-    context.user_data['start_date'] = selected_date
+    if result is None:
+        return START_DATE
+    
+    # Date was selected
+    context.user_data['start_date'] = result
     return await submit_cycle(update, context)
 
 async def submit_cycle(update: Update, context: CallbackContext) -> int:
@@ -190,7 +197,8 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
                         ),
                         parse_mode="Markdown"
                     )
-                    return ConversationHandler.END
+                    # Return to MENU state instead of ending conversation
+                    return MENU
                 else:
                     await update.callback_query.message.reply_text(
                         get_message(lang, 'cycle', 'save_failed')
@@ -204,7 +212,7 @@ async def submit_cycle(update: Update, context: CallbackContext) -> int:
     
     return ConversationHandler.END
 
-# Create the conversation handler
+# Update the conversation handler to include MENU state
 add_cycle_conversation = ConversationHandler(
     entry_points=[MessageHandler(
         filters.Regex('^(➕ Add New Cycle|➕ افزودن دوره جدید)$'),
@@ -214,6 +222,7 @@ add_cycle_conversation = ConversationHandler(
         SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_symptoms)],
         MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_medication)],
         START_DATE: [CallbackQueryHandler(handle_calendar_selection)],
+        MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],  # Add menu state
     },
     fallbacks=[CommandHandler('cancel', lambda u, c: ConversationHandler.END)],
     name="add_cycle_conversation"
