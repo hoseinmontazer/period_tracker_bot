@@ -15,7 +15,11 @@ from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION,
 import aiohttp
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
 from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
-from partner import show_partner_menu, handle_partner_menu
+from partner import (
+    show_partner_menu, 
+    handle_partner_menu, 
+    handle_partner_message
+)
 
 # Logging setup
 logging.basicConfig(

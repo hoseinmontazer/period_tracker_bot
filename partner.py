@@ -79,4 +79,22 @@ async def partner_settings(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     # Add partner settings logic
     await update.message.reply_text(get_message(lang, 'partner', 'coming_soon'))
+    return PARTNER_MENU
+
+async def handle_partner_message(update: Update, context: CallbackContext) -> int:
+    """Handle messages sent to partner."""
+    text = update.message.text
+    lang = context.user_data.get('language', 'en')
+    
+    if text == get_message(lang, 'settings', 'back_to_main'):
+        return await show_partner_menu(update, context)
+        
+    # Here you would typically make an API call to send the message to the partner
+    # For now, we'll just show a success message
+    await update.message.reply_text(
+        get_message(lang, 'partner', 'message_sent'),
+        reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'settings', 'back_to_main')]], 
+                                      one_time_keyboard=True)
+    )
+    
     return PARTNER_MENU 
