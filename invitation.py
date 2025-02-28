@@ -5,6 +5,7 @@ from telegram.ext import CallbackContext, ConversationHandler
 from languages import get_message
 from states import MENU, REGISTER, ACCEPTING_INVITATION
 from config import BASE_URL
+from auth import refresh_token
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +15,16 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
     lang = context.user_data.get('language', 'en')
 
     # Get access token from user_tokens
-    if chat_id not in context.bot_data.get('user_tokens', {}) or "access" not in context.bot_data['user_tokens'][chat_id]:
+    user_tokens = context.bot_data.get('user_tokens', {})
+    if chat_id not in user_tokens:
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 
-    access_token = context.bot_data['user_tokens'][chat_id]["access"]
+    access_token = user_tokens[chat_id].get("access")
+    if not access_token:
+        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+        return REGISTER
+
     headers = {"Authorization": f"Bearer {access_token}"}
 
     try:
@@ -26,11 +32,13 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
             response = await client.post(f"{BASE_URL}/api/user/invitation/", headers=headers)
 
             if response.status_code == 401:  # Token expired
-                from bot import refresh_token
-                new_token = await refresh_token(chat_id, context.bot_data['user_tokens'])
+                new_token = await refresh_token(chat_id, user_tokens)
                 if new_token:
                     headers["Authorization"] = f"Bearer {new_token}"
                     response = await client.post(f"{BASE_URL}/api/user/invitation/", headers=headers)
+                else:
+                    await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+                    return REGISTER
 
             if response.status_code == 200:
                 data = response.json()
@@ -53,7 +61,8 @@ async def start_accept_invitation(update: Update, context: CallbackContext) -> i
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
 
-    if chat_id not in context.bot_data.get('user_tokens', {}) or "access" not in context.bot_data['user_tokens'][chat_id]:
+    user_tokens = context.bot_data.get('user_tokens', {})
+    if chat_id not in user_tokens or not user_tokens[chat_id].get("access"):
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 
@@ -73,12 +82,12 @@ async def accept_invitation(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text("Please enter a valid numeric code.")
         return ACCEPTING_INVITATION
 
-    # Get access token from user_tokens
-    if chat_id not in context.bot_data.get('user_tokens', {}) or "access" not in context.bot_data['user_tokens'][chat_id]:
+    user_tokens = context.bot_data.get('user_tokens', {})
+    if chat_id not in user_tokens or not user_tokens[chat_id].get("access"):
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 
-    access_token = context.bot_data['user_tokens'][chat_id]["access"]
+    access_token = user_tokens[chat_id]["access"]
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {'code_to_accept': invitation_code}
 
@@ -91,8 +100,7 @@ async def accept_invitation(update: Update, context: CallbackContext) -> int:
             )
 
             if response.status_code == 401:  # Token expired
-                from bot import refresh_token
-                new_token = await refresh_token(chat_id, context.bot_data['user_tokens'])
+                new_token = await refresh_token(chat_id, user_tokens)
                 if new_token:
                     headers["Authorization"] = f"Bearer {new_token}"
                     response = await client.post(
@@ -100,6 +108,9 @@ async def accept_invitation(update: Update, context: CallbackContext) -> int:
                         headers=headers,
                         data=data
                     )
+                else:
+                    await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+                    return REGISTER
 
             if response.status_code == 200:
                 await update.message.reply_text("✅ Partner invitation accepted successfully!")
