@@ -34,12 +34,12 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     reply_keyboard = [
-        [{"text": get_message(lang, 'menu', 'track_period')}, 
-         {"text": get_message(lang, 'menu', 'view_history')}],
-        [{"text": get_message(lang, 'menu', 'cycle_analysis')}, 
-         {"text": get_message(lang, 'menu', 'add_new_cycle')}],
-        [{"text": get_message(lang, 'menu', 'partner_menu')}],
-        [{"text": get_message(lang, 'settings', 'menu')}]
+        [get_message(lang, 'menu', 'track_period'), 
+         get_message(lang, 'menu', 'view_history')],
+        [get_message(lang, 'menu', 'cycle_analysis'), 
+         get_message(lang, 'menu', 'add_new_cycle')],
+        [get_message(lang, 'menu', 'partner_menu')],  # Make sure this matches exactly
+        [get_message(lang, 'settings', 'menu')]
     ]
 
     await update.message.reply_text(
@@ -68,7 +68,7 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     elif text == get_message(lang, 'menu', 'cycle_analysis'):
         from cycle_analysis import fetch_cycle_analysis
         return await fetch_cycle_analysis(update, context)
-    elif text == get_message(lang, 'menu', 'partner_menu'):
+    elif text == get_message(lang, 'menu', 'partner_menu'):  # Make sure this matches exactly
         from partner import show_partner_menu
         return await show_partner_menu(update, context)
     elif text == get_message(lang, 'settings', 'menu'):
@@ -78,6 +78,9 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         from auth import logout
         return await logout(update, context)
     
+    # Log the unhandled menu option
+    logger.warning(f"Unhandled menu option: '{text}'")
+    logger.debug(f"Expected partner_menu text: '{get_message(lang, 'menu', 'partner_menu')}'")
     return MENU
 
 async def handle_initial_choice(update: Update, context: CallbackContext) -> int:
