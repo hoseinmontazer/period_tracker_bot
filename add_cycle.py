@@ -34,7 +34,12 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
     
     selected_date = calendar.process_calendar_selection(query)
     
-    if isinstance(selected_date, str):  # Date was selected
+    if isinstance(selected_date, tuple):  # Navigation through calendar
+        _, markup = selected_date
+        await query.message.edit_reply_markup(reply_markup=markup)
+        return START_DATE
+    
+    if selected_date:  # Date was selected
         context.user_data['start_date'] = selected_date
         await query.message.edit_text(f"Selected date: {selected_date}")
         
@@ -50,9 +55,8 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardMarkup(SYMPTOM_OPTIONS[lang], one_time_keyboard=False)
         )
         return SYMPTOMS
-    else:  # Navigation through calendar
-        await query.message.edit_reply_markup(reply_markup=selected_date)
-        return START_DATE
+    
+    return START_DATE
 
 async def handle_symptoms(update, context):
     text = update.message.text
