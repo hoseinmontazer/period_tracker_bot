@@ -4,9 +4,8 @@ from languages import get_message
 from states import MENU, REGISTER, LOGIN, PERIOD_TRACKING
 import logging
 import httpx
-from utils import load_tokens, save_tokens
+from utils import load_tokens, save_tokens, refresh_token
 from config import BASE_URL
-from auth import refresh_token
 
 logger = logging.getLogger(__name__)
 

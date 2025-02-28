@@ -1,6 +1,6 @@
+import logging
 import httpx
 import aiohttp
-import logging
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
 from states import REGISTER, MENU
