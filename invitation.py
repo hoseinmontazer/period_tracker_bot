@@ -14,17 +14,13 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
 
-    # Get access token from user_tokens
-    user_tokens = context.bot_data.get('user_tokens', {})
-    if chat_id not in user_tokens:
+    # First check if user is authenticated
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 
-    access_token = user_tokens[chat_id].get("access")
-    if not access_token:
-        await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
-        return REGISTER
-
+    access_token = user_tokens[chat_id]["access"]
     headers = {"Authorization": f"Bearer {access_token}"}
 
     try:
@@ -61,8 +57,9 @@ async def start_accept_invitation(update: Update, context: CallbackContext) -> i
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
 
-    user_tokens = context.bot_data.get('user_tokens', {})
-    if chat_id not in user_tokens or not user_tokens[chat_id].get("access"):
+    # First check if user is authenticated
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 
@@ -82,8 +79,9 @@ async def accept_invitation(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text("Please enter a valid numeric code.")
         return ACCEPTING_INVITATION
 
-    user_tokens = context.bot_data.get('user_tokens', {})
-    if chat_id not in user_tokens or not user_tokens[chat_id].get("access"):
+    # Check if user is authenticated
+    from bot import user_tokens
+    if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
         await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
         return REGISTER
 
@@ -130,4 +128,4 @@ async def accept_invitation(update: Update, context: CallbackContext) -> int:
         )
         return ACCEPTING_INVITATION
 
-    return MENU 
+    return MENU
