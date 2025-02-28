@@ -11,7 +11,9 @@ EN = {
         'cycle_analysis': "Cycle Analysis",
         'add_new_cycle': "Add New Cycle",
         'logout': "Logout",
-        'language_changed': "Language changed to English"
+        'language_changed': "Language changed to English",
+        'invitation_partner': 'Generate Partner Invitation',
+        'accept_invitation': 'Accept Invitation Code'
     },
     'auth': {
         'login_required': "⚠️ You need to log in first. Use /start.",
@@ -76,7 +78,9 @@ FA = {
         'cycle_analysis': "تحلیل دوره",
         'add_new_cycle': "افزودن دوره جدید",
         'logout': "خروج",
-        'language_changed': "زبان به فارسی تغییر کرد"
+        'language_changed': "زبان به فارسی تغییر کرد",
+        'invitation_partner': 'دعوت از شریک',
+        'accept_invitation': 'پذیرش کد دعوت'
     },
     'auth': {
         'login_required': "⚠️ ابتدا باید وارد شوید. از /start استفاده کنید.",

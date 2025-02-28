@@ -10,9 +10,10 @@ from cycle_analysis import fetch_cycle_analysis
 from add_cycle import add_cycle_conversation, start_add_cycle
 from utils import load_tokens, save_tokens
 import config
-from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU
+from states import REGISTER, LOGIN, PERIOD_TRACKING, MENU, ACCEPTING_INVITATION
 import aiohttp
 from languages import get_message, SYMPTOM_OPTIONS, MEDICATION_OPTIONS
+from invitation import generate_invitation_code, start_accept_invitation, accept_invitation
 
 # Logging setup
 logging.basicConfig(
@@ -54,7 +55,8 @@ async def show_main_menu(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [
         [get_message(lang, 'menu', 'track_period'), get_message(lang, 'menu', 'view_history')],
         [get_message(lang, 'menu', 'cycle_analysis'), get_message(lang, 'menu', 'add_new_cycle')],
-        ['🇬🇧 English' if lang == 'fa' else '🇮🇷 فارسی'],  # Language toggle button
+        [get_message(lang, 'menu', 'invitation_partner'), get_message(lang, 'menu', 'accept_invitation')],
+        ['🇬🇧 English' if lang == 'fa' else '🇮🇷 فارسی'],
         [get_message(lang, 'menu', 'logout')]
     ]
 
@@ -102,6 +104,16 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
         if '@' not in user_input or '.' not in user_input:
             await update.message.reply_text("Please enter a valid email address (e.g., example@gmail.com):")
             return REGISTER
+        
+        context.user_data['email'] = user_input
+        await update.message.reply_text("Please select your sex (male/female):")
+        context.user_data['registration_step'] = 'sex'
+        return REGISTER
+            
+    elif current_step == 'sex':
+        if user_input.lower() not in ['male', 'female']:
+            await update.message.reply_text("Please enter either 'male' or 'female':")
+            return REGISTER
             
         # Make API call to register user
         try:
@@ -110,7 +122,8 @@ async def handle_registration(update: Update, context: CallbackContext) -> int:
                     'username': context.user_data['username'],
                     'password': context.user_data['password'],
                     're_password': context.user_data['password'],
-                    'email': user_input
+                    'email': context.user_data['email'],
+                    'sex': user_input.lower()
                 }
                 logger.info(f"Attempting registration with data: {data}")
                 
@@ -216,7 +229,6 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
 
     # Handle language change
     if text in ['🇬🇧 English', '🇮🇷 فارسی']:
-        # Toggle language
         new_lang = 'en' if text == '🇬🇧 English' else 'fa'
         context.user_data['language'] = new_lang
         return await show_main_menu(update, context)
@@ -230,6 +242,10 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         return await cycle_analysis_handler(update, context)
     elif text == get_message(lang, 'menu', 'add_new_cycle'):
         return await start_add_cycle(update, context)
+    elif text == get_message(lang, 'menu', 'invitation_partner'):
+        return await generate_invitation_code(update, context)
+    elif text == get_message(lang, 'menu', 'accept_invitation'):
+        return await start_accept_invitation(update, context)
     elif text == get_message(lang, 'menu', 'logout'):
         return await logout(update, context)
 
@@ -256,6 +272,9 @@ def main():
             ],
             LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, login)],
             PERIOD_TRACKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, authenticate)],
+            ACCEPTING_INVITATION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, accept_invitation)
+            ],
             MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
             ],
