@@ -74,7 +74,7 @@ async def handle_calendar_selection(update: Update, context: CallbackContext):
         
         # If result is a tuple, it's a navigation action
         if isinstance(result, tuple):
-            selected_date, new_markup = result
+            _, new_markup = result
             await query.message.edit_reply_markup(reply_markup=new_markup)
             return START_DATE
             
