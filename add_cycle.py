@@ -31,14 +31,15 @@ async def start_add_cycle(update: Update, context: CallbackContext) -> int:
     symptom_keyboard = []
     # Add symptoms in pairs
     for i in range(0, len(symptoms), 2):
-        row = [KeyboardButton(symptoms[i])]
+        row = []
+        row.append({"text": str(symptoms[i])})  # Convert to string and use dict format
         if i + 1 < len(symptoms):
-            row.append(KeyboardButton(symptoms[i + 1]))
+            row.append({"text": str(symptoms[i + 1])})
         symptom_keyboard.append(row)
     
     # Add the Done button as a separate row
     done_text = get_message(lang, 'general', 'done')
-    symptom_keyboard.append([KeyboardButton(done_text)])
+    symptom_keyboard.append([{"text": str(done_text)}])
     
     try:
         await update.message.reply_text(
@@ -76,18 +77,19 @@ async def handle_symptoms(update: Update, context: CallbackContext) -> int:
             )
             return ConversationHandler.END
         
-        # Create keyboard with medications using KeyboardButton
+        # Create keyboard with medications
         medication_keyboard = []
         # Add medications in pairs
         for i in range(0, len(medications), 2):
-            row = [KeyboardButton(medications[i])]
+            row = []
+            row.append({"text": str(medications[i])})
             if i + 1 < len(medications):
-                row.append(KeyboardButton(medications[i + 1]))
+                row.append({"text": str(medications[i + 1])})
             medication_keyboard.append(row)
         
         # Add the Done button
         done_text = get_message(lang, 'general', 'done')
-        medication_keyboard.append([KeyboardButton(done_text)])
+        medication_keyboard.append([{"text": str(done_text)}])
         
         try:
             await update.message.reply_text(
