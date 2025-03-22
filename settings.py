@@ -12,7 +12,7 @@ async def show_settings_menu(update: Update, context: CallbackContext) -> int:
         [get_message(lang, 'menu', 'invitation_partner'), get_message(lang, 'menu', 'accept_invitation')],
         ['🇬🇧 English', '🇮🇷 فارسی'],
         [get_message(lang, 'menu', 'logout')],
-        [get_message(lang, 'settings', 'back_to_main')]
+        [get_message(lang, 'menu', 'back_to_main')]
     ]
     
     await update.message.reply_text(
@@ -26,8 +26,8 @@ async def handle_settings(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     lang = context.user_data.get('language', 'en')
     
-    if text == get_message(lang, 'settings', 'back_to_main'):
-        from bot import show_main_menu
+    if text == get_message(lang, 'menu', 'back_to_main'):
+        from menu_handlers import show_main_menu
         return await show_main_menu(update, context)
     elif text == '🇬🇧 English':
         context.user_data['language'] = 'en'
