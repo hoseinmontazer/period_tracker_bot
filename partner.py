@@ -103,12 +103,8 @@ async def partner_analysis(update: Update, context: CallbackContext) -> int:
 async def start_partner_message(update: Update, context: CallbackContext) -> int:
     """Start the process of sending a message to partner."""
     lang = context.user_data.get('language', 'en')
-    await update.message.reply_text(
-        get_message(lang, 'partner', 'enter_message'),
-        reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'settings', 'back_to_main')]], 
-                                      one_time_keyboard=True)
-    )
-    return PARTNER_MESSAGE
+    await update.message.reply_text(get_message(lang, 'partner', 'coming_soon'))
+    return PARTNER_MENU
 
 async def partner_notifications(update: Update, context: CallbackContext) -> int:
     """Manage partner notifications."""
@@ -130,7 +126,8 @@ async def handle_partner_message(update: Update, context: CallbackContext) -> in
     lang = context.user_data.get('language', 'en')
     
     if text == get_message(lang, 'settings', 'back_to_main'):
-        return await show_partner_menu(update, context)
+        from bot import show_main_menu
+        return await show_main_menu(update, context)
     
     await update.message.reply_text(get_message(lang, 'partner', 'coming_soon'))
     return PARTNER_MENU 
