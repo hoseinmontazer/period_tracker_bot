@@ -131,13 +131,6 @@ async def handle_partner_message(update: Update, context: CallbackContext) -> in
     
     if text == get_message(lang, 'settings', 'back_to_main'):
         return await show_partner_menu(update, context)
-        
-    # Here you would typically make an API call to send the message to the partner
-    # For now, we'll just show a success message
-    await update.message.reply_text(
-        get_message(lang, 'partner', 'message_sent'),
-        reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'settings', 'back_to_main')]], 
-                                      one_time_keyboard=True)
-    )
     
+    await update.message.reply_text(get_message(lang, 'partner', 'coming_soon'))
     return PARTNER_MENU 
