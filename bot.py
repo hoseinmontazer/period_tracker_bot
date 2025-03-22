@@ -146,6 +146,7 @@ def main():
             MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
             SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],
             PARTNER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)],
+            ACCEPTING_INVITATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, accept_invitation)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
         allow_reentry=True,

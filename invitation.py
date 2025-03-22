@@ -47,18 +47,19 @@ async def start_accept_invitation(update: Update, context: CallbackContext) -> i
 
 async def accept_invitation(update: Update, context: CallbackContext) -> int:
     """Process the invitation code."""
-    invitation_code = update.message.text
+    text = update.message.text
     chat_id = str(update.message.chat_id)
     lang = context.user_data.get('language', 'en')
     
-    if invitation_code == get_message(lang, 'menu', 'back_to_main'):
-        return MENU
+    if text == get_message(lang, 'menu', 'back_to_main'):
+        from bot import show_main_menu
+        return await show_main_menu(update, context)
     
     try:
         # Here you would typically make an API call to validate and process the invitation code
         # For example:
         # async with aiohttp.ClientSession() as session:
-        #     async with session.post('your_api_endpoint', json={'code': invitation_code}) as response:
+        #     async with session.post('your_api_endpoint', json={'code': text}) as response:
         #         if response.status == 200:
         #             # Success
         
