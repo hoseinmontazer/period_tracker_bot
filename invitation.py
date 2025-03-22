@@ -72,27 +72,45 @@ async def accept_invitation(update: Update, context: CallbackContext) -> int:
     lang = context.user_data.get('language', 'en')
     
     if text == get_message(lang, 'menu', 'back_to_main'):
-        from bot import show_main_menu
+        from menu_handlers import show_main_menu
         return await show_main_menu(update, context)
     
     try:
-        # Here you would typically make an API call to validate and process the invitation code
-        # For example:
-        # async with aiohttp.ClientSession() as session:
-        #     async with session.post('your_api_endpoint', json={'code': text}) as response:
-        #         if response.status == 200:
-        #             # Success
+        # Get the user's access token
+        from utils import load_tokens
+        user_tokens = load_tokens()
         
-        # For now, we'll just show a success message
-        await update.message.reply_text(
-            get_message(lang, 'invitation', 'accepted'),
-            reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
-                                          one_time_keyboard=True)
-        )
+        if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+            await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+            return MENU
+
+        access_token = user_tokens[chat_id]["access"]
         
-        return MENU
-        
+        # Make API call to accept invitation
+        async with aiohttp.ClientSession() as session:
+            # Create form data
+            form_data = aiohttp.FormData()
+            form_data.add_field('code_to_accept', text)
+            
+            async with session.post(
+                'https://api-period.shirpala.ir/api/user/invitation/',
+                headers={"Authorization": f"Bearer {access_token}"},
+                data=form_data
+            ) as response:
+                if response.status == 200 or response.status == 201:
+                    # Show success message
+                    await update.message.reply_text(
+                        get_message(lang, 'invitation', 'accepted'),
+                        reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
+                                                      one_time_keyboard=True)
+                    )
+                    return SETTINGS
+                else:
+                    logger.error(f"Failed to accept invitation. Status: {response.status}")
+                    await update.message.reply_text(get_message(lang, 'invitation', 'acceptance_error'))
+                    return SETTINGS
+                    
     except Exception as e:
         logger.error(f"Error accepting invitation: {str(e)}")
         await update.message.reply_text(get_message(lang, 'invitation', 'acceptance_error'))
-        return MENU
+        return SETTINGS
