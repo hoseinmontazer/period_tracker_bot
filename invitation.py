@@ -14,25 +14,45 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
     lang = context.user_data.get('language', 'en')
     
     try:
-        # Generate a unique invitation code
-        invitation_code = str(uuid.uuid4())[:8]
+        # Get the user's access token
+        from utils import load_tokens
+        user_tokens = load_tokens()
         
-        # Store the invitation code in user_data
-        context.user_data['invitation_code'] = invitation_code
+        if chat_id not in user_tokens or "access" not in user_tokens[chat_id]:
+            await update.message.reply_text(get_message(lang, 'auth', 'login_required'))
+            return MENU
+
+        access_token = user_tokens[chat_id]["access"]
         
-        # Send the code to the user
-        await update.message.reply_text(
-            get_message(lang, 'invitation', 'code_generated').format(invitation_code),
-            reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
-                                          one_time_keyboard=True)
-        )
-        
-        return SETTINGS
-        
+        # Make API call to generate invitation code
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                'https://api-period.shirpala.ir/api/user/invitation/',
+                headers={"Authorization": f"Bearer {access_token}"}
+            ) as response:
+                if response.status == 200 or response.status == 201:
+                    data = await response.json()
+                    invitation_code = data.get('invitation_code')
+                    
+                    # Store the invitation code in user_data
+                    context.user_data['invitation_code'] = invitation_code
+                    
+                    # Send the code to the user
+                    await update.message.reply_text(
+                        get_message(lang, 'invitation', 'code_generated').format(invitation_code),
+                        reply_markup=ReplyKeyboardMarkup([[get_message(lang, 'menu', 'back_to_main')]], 
+                                                      one_time_keyboard=True)
+                    )
+                    return SETTINGS
+                else:
+                    logger.error(f"Failed to generate invitation code. Status: {response.status}")
+                    await update.message.reply_text(get_message(lang, 'invitation', 'generation_error'))
+                    return SETTINGS
+                    
     except Exception as e:
         logger.error(f"Error generating invitation code: {str(e)}")
         await update.message.reply_text(get_message(lang, 'invitation', 'generation_error'))
-        return MENU
+        return SETTINGS
 
 async def start_accept_invitation(update: Update, context: CallbackContext) -> int:
     """Start the invitation acceptance process."""
