@@ -4,7 +4,7 @@ import aiohttp
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
 from languages import get_message
-from states import MENU, ACCEPTING_INVITATION
+from states import MENU, ACCEPTING_INVITATION, SETTINGS
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ async def generate_invitation_code(update: Update, context: CallbackContext) -> 
                                           one_time_keyboard=True)
         )
         
-        return MENU
+        return SETTINGS
         
     except Exception as e:
         logger.error(f"Error generating invitation code: {str(e)}")
