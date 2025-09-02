@@ -1,21 +1,20 @@
 # bot.py
 import os, logging
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, CallbackContext
 from dotenv import load_dotenv
-from states import REGISTER, LOGIN, PASSWORD, MENU, ADD_CYCLE_DATE
-from handlers.main_handlers import handle_initial_choice, handle_menu, cancel
+from handlers.cycle import cycle_analysis
+from handlers.setting.setting import handle_settings
+from handlers.profile.profile import handle_profile, start_profile
+from states import CYCLE_ANALYSIS_MENU, LANGUAGE_SELECTION, PROFILE_MENU, REGISTER, LOGIN, PASSWORD, MENU, ADD_CYCLE_DATE , HISTORY, SETTINGS, ViewProfile
 from handlers.login_handlers import handle_login, handle_password
 from languages import get_message
 from telegram import Update, ReplyKeyboardMarkup
 from utils import load_user_data, save_user_data
-from menus import get_main_menu
-from telegram.ext import ContextTypes
-from handlers.cycle.cycle_handlers import handle_add_new_cycle
-
-
-load_dotenv()
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
+from menus import get_main_menu,handle_initial_choice, handle_menu, cancel
+from telegram.ext import ContextTypes 
+from config import TELEGRAM_BOT_TOKEN
+from handlers.cycle.add_cycle_handlers import add_cycle_conversation, start_add_cycle
+# from handlers.setting.setting import settings_conversation, start_settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -23,21 +22,17 @@ logger = logging.getLogger(__name__)
 # Restore user state before any handler
 # -------------------
 async def restore_user_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message:
-        chat_id = str(update.message.chat_id)
-        user_data = load_user_data()
-        if chat_id in user_data:
-            context.user_data['state'] = user_data[chat_id].get('state', REGISTER)
-            context.user_data['username'] = user_data[chat_id].get('username')
-            context.user_data['language'] = user_data[chat_id].get('language', 'en')
+    user_data = context.user_data
+    last_state = user_data.get("last_state", "menu")  
+    if last_state == "menu":
+        return await handle_menu(update, context)
 
-            # اگر قبلاً در منوی اصلی بوده، منو را نمایش بده
-            if context.user_data['state'] == MENU:
-                menu_text, markup = get_main_menu(context.user_data['language'])
-                await update.message.reply_text(menu_text, reply_markup=markup)
-        else:
-            context.user_data['state'] = REGISTER
-            context.user_data['language'] = 'en'
+    elif last_state == "add_cycle":
+        return await start_add_cycle(update, context)
+
+    else:
+        return await handle_menu(update, context)
+
 
 # -------------------
 # Start command
@@ -51,7 +46,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     if chat_id in user_data and "access" in user_data[chat_id]:
         # User logged in → show main menu
-        menu_text, markup = get_main_menu(lang)
+        markup, menu_text = get_main_menu(lang)
         await update.message.reply_text(menu_text, reply_markup=markup)
 
         context.user_data['state'] = MENU
@@ -66,6 +61,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         )
         context.user_data['state'] = REGISTER
         return REGISTER
+
+
+
+
+
 
 # -------------------
 # Save state and tokens
@@ -90,33 +90,56 @@ def main():
 
     # Load user tokens
     user_data = load_user_data()
-    bot_tokens = {chat_id: {"access": info["access"], "refresh": info.get("refresh")} 
-                  for chat_id, info in user_data.items() if "access" in info}
+    bot_tokens = {
+        chat_id: {"access": info["access"], "refresh": info.get("refresh")}
+        for chat_id, info in user_data.items() if "access" in info
+    }
     application.bot_data['user_tokens'] = bot_tokens
 
-
-    # Conversation handler FIRST (add to group 0)
-    conv_handler = ConversationHandler(
+    # Main conversation (register/login/menu)
+    main_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
             REGISTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_initial_choice)],
             LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_login)],
             PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_password)],
             MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
-            ADD_CYCLE_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_add_new_cycle)],
+            SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],  # Add this
+            LANGUAGE_SELECTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],  # Add this
+            HISTORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, restore_user_state)],
+            ADD_CYCLE_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, restore_user_state)],  
+            PROFILE_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, start_profile)],
+            ViewProfile: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_profile)],
+            # cycle analysis state
+            CYCLE_ANALYSIS_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, cycle_analysis)],
+            
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        name="main_conversation",
+        conversation_timeout=300,
         allow_reentry=True
     )
+    application.add_handler(main_conv, group=0)
 
+    # Add Cycle conversation
+    application.add_handler(add_cycle_conversation, group=1)
 
-    application.add_handler(conv_handler, group=0)  # Add to group 0
-
-    # Restore user state in a DIFFERENT group (group 1)
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, restore_user_state), group=1)
+    # application.add_handler(settings_conversation)
+    
+    # Global catch-all
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT 
+            & ~filters.COMMAND 
+            & ~filters.Regex("^(📜 View History|مشاهده تاریخچه)$"),
+            restore_user_state
+        ),
+        group=1
+    )
 
     logger.info("Bot is starting...")
     application.run_polling()
+
 
 if __name__ == "__main__":
     main()

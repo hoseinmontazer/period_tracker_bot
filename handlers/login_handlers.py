@@ -26,14 +26,11 @@ async def handle_password(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     password = update.message.text
     username = context.user_data.get("username")
 
-    # Call login API
     access, refresh = await login_user(username, password)
 
     if access:
-        # بارگذاری اطلاعات موجود
         user_data = load_user_data()
 
-        # ذخیره توکن‌ها و state
         user_data[chat_id] = {
             "access": access,
             "refresh": refresh,
@@ -42,18 +39,14 @@ async def handle_password(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         }
         save_user_data(user_data)
 
-        # ست کردن توکن‌ها در bot_data برای runtime
         context.bot_data['user_tokens'] = user_data
 
-        # نمایش منوی اصلی
         menu_text, markup = get_main_menu(lang)
         await update.message.reply_text(menu_text, reply_markup=markup)
 
-        # ست کردن state در user_data
         context.user_data['state'] = MENU
         return MENU
     else:
-        # لاگین شکست خورده → پرسش دوباره نام کاربری
         await update.message.reply_text(
             f"{get_message(lang, 'auth', 'login_failed')}\n{get_message(lang, 'auth', 'enter_username')}"
         )

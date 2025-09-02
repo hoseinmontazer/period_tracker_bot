@@ -86,6 +86,9 @@ class CalendarKeyboard:
             if data == "ignore":
                 print("Ignore button pressed")
                 return None
+            elif data == "calendar_cancel":
+                print("Calendar cancelled by user")
+                return "cancel"
                 
             elif data.startswith(("prev_", "next_")):
                 print(f"Navigation button pressed: {data}")
