@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 from handlers.cycle import cycle_analysis
 from handlers.setting.setting import handle_settings
 from handlers.profile.profile import handle_profile, start_profile
-from states import CYCLE_ANALYSIS_MENU, LANGUAGE_SELECTION, PROFILE_MENU, REGISTER, LOGIN, PASSWORD, MENU, ADD_CYCLE_DATE , HISTORY, SETTINGS, ViewProfile
+from handlers.partner.partner import handle_accept_invite_code, handle_accept_remove_code, handle_partner_menu
+from states import ACCEPT_INVITE_CODE, ACCEPT_REMOVE_CODE, CYCLE_ANALYSIS_MENU, LANGUAGE_SELECTION, PARTNER_MENU, PROFILE_MENU, REGISTER, LOGIN, PASSWORD, MENU, ADD_CYCLE_DATE , HISTORY, REMOVE_PARTNER, SETTINGS, ViewProfile
 from handlers.login_handlers import handle_login, handle_password
 from languages import get_message
 from telegram import Update, ReplyKeyboardMarkup
@@ -21,19 +22,32 @@ logger = logging.getLogger(__name__)
 # -------------------
 # Restore user state before any handler
 # -------------------
+# async def restore_user_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     user_data = context.user_data
+#     last_state = user_data.get("last_state", "menu")  
+#     if last_state == "menu":
+#         return await handle_menu(update, context)
+
+#     elif last_state == "add_cycle":
+#         return await start_add_cycle(update, context)
+#     elif last_state == "accept_invite":
+#             return await handle_accept_invite_code(update, context)
+#     else:
+#         return await handle_menu(update, context)
+
 async def restore_user_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_data = context.user_data
-    last_state = user_data.get("last_state", "menu")  
-    if last_state == "menu":
+    last_state = context.user_data.get("state", MENU)
+
+    if last_state == MENU:
         return await handle_menu(update, context)
-
-    elif last_state == "add_cycle":
+    elif last_state == ADD_CYCLE_DATE:
         return await start_add_cycle(update, context)
-
+    elif last_state == ACCEPT_INVITE_CODE:
+        return await handle_accept_invite_code(update, context)
+    elif last_state == ACCEPT_REMOVE_CODE:
+        return await handle_accept_remove_code(update, context)
     else:
         return await handle_menu(update, context)
-
-
 # -------------------
 # Start command
 # -------------------
@@ -112,6 +126,12 @@ def main():
             ViewProfile: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_profile)],
             # cycle analysis state
             CYCLE_ANALYSIS_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, cycle_analysis)],
+            PARTNER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)],
+            ACCEPT_INVITE_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_accept_invite_code)],
+            ACCEPT_REMOVE_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_accept_remove_code)],
+
+
+            
             
         },
         fallbacks=[CommandHandler("cancel", cancel)],

@@ -2,7 +2,7 @@ import logging
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ContextTypes, CallbackContext, ConversationHandler, MessageHandler, filters
 from languages import get_message
-from states import ADD_CYCLE_DATE, LOGIN, MENU, REGISTER
+from states import ACCEPT_INVITE_CODE, ADD_CYCLE_DATE, LOGIN, MENU, REGISTER
 
 def get_main_menu(lang: str):
     """Return the main menu text and reply keyboard."""
@@ -53,8 +53,8 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
     from handlers.cycle.history_handlers import history_handlers
     from handlers.setting.setting import start_settings
     from handlers.profile.profile import handle_profile, start_profile
-
     try:
+ 
         if text == get_message(lang, 'menu', 'add_new_cycle'):
             return await start_add_cycle(update, context)
         elif text == get_message(lang, 'menu', 'track_period'):
@@ -83,6 +83,33 @@ async def handle_menu(update: Update, context: CallbackContext) -> int:
         elif text == get_message(lang, 'cycle_analysis', 'view_analysis'):
             from handlers.cycle.cycle_analysis import cycle_analysis
             return await cycle_analysis(update, context)
+        #partner menu
+        elif text == get_message(lang, 'menu', 'partner_menu'):
+            from handlers.partner.partner import start_partner_menu
+            return await start_partner_menu(update, context)
+        elif text == get_message(lang,'partner','add_partner'):
+            from handlers.partner.partner import handle_partner_menu
+            return await handle_partner_menu(update, context)
+        elif text == get_message(lang, 'partner', 'view_partners'):
+            from handlers.partner.partner import handle_partner_menu
+            return await handle_partner_menu(update, context)
+        elif text == get_message(lang,'partner','get_invite_code'):
+            from handlers.partner.partner import handle_partner_menu
+            return await handle_partner_menu(update, context)
+        
+        elif text == get_message(lang, 'partner', 'accept_invite'):
+
+            from handlers.partner.partner import handle_partner_menu
+            return await handle_partner_menu(update, context)
+
+        
+        elif text == get_message(lang, 'partner', 'get_remove_code'):
+            from handlers.partner.partner import handle_partner_menu
+            return await handle_partner_menu(update, context)
+        elif text == get_message(lang, 'partner', 'remove_partner'):
+            from handlers.partner.partner import handle_partner_menu
+            return await handle_partner_menu(update, context)
+        ###
         elif text == get_message(lang, 'menu', 'back_to_main_menu'):
             markup, menu_text = get_main_menu(lang)
             await update.message.reply_text(menu_text, reply_markup=markup)

@@ -33,13 +33,40 @@ MESSAGES = {
             'cycle_variations': "Cycle Variations"
 
         },
+        'partner': {
+            'partner_request_sent': "✅ Partner request sent to {email}.",
+            'no_partners': "You have no partners.",
+            'partners_list': "👥 *Your Partners:*\n\n{partners}",
+            'remove_partner_prompt': "Please select a partner to remove:",
+            'partner_removed': "✅ Partner {username} has been removed.",
+            'no_partners_to_remove': "You have no partners to remove.",
+            'add_partner': "Add Partner",
+            'view_partners': "View Partners",
+            'remove_partner': "Remove Partner",
+            'get_invite_code': "Get Invite Code",
+            'invite_code_success': "Your invite code is: `{code}`\nIt expires in {hours} hours.",
+            'remove_code_success': "Your Remove code is: `{code}`\nIt expires in {hours} hours.",
+            'accept_invite': "Accept Invite",
+            'enter_invite_code': "Please enter the invite code you received from your partner:",
+            'enter_remove_code': "Please enter the remove code you received:",
+            'get_remove_code': "Get Remove Code",
+            'send_message': "Send Message",
+            'no_code_enterd': "no code enterd",
+            'invite_code_entered':"invite code enterd",
+            'remove_code_entered':"remove code enterd",
+            "invite_accept_success": "Invitation code accepted successfully! Partner: {partner}",
+            "partner_removed_success": "Removed code accepted successfully! Partner Removed: {partner}",
+            "invite_accept_success_generic": "Invitation code accepted successfully!",
+            'back_to_main_menu': "🏠 Back to Main Menu",
+            'partner_menu': "Partner Menu"
+        },
         'menu': {
             'main': "Main Menu",
             'track_period': "Track Period",
             'view_history': "View History",
             'cycle_analysis': "Cycle Analysis",
             'add_new_cycle': "➕ Add New Cycle",
-            'partner_menu': "Partner Menu",
+            'partner_menu': "👥 Partner Menu",
             'back_to_main_menu': '🏠 Back to Main Menu'
         },
         'settings': {
@@ -113,6 +140,9 @@ MESSAGES = {
             'prediction_reliability': "قابلیت اطمینان پیش‌بینی",
             'next_predicted_date': "تاریخ پیش‌بینی‌شده بعدی",
             'cycle_variations': "تغییرات دوره"
+        },
+        'partners':{
+
         },
         'menu': {
             'main': "منوی اصلی",
