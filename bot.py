@@ -1,165 +1,65 @@
-# bot.py
-import os, logging
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, CallbackContext
-from dotenv import load_dotenv
-from handlers.cycle import cycle_analysis
-from handlers.setting.setting import handle_settings
-from handlers.profile.profile import handle_profile, start_profile
-from handlers.partner.partner import handle_accept_invite_code, handle_accept_remove_code, handle_partner_menu
-from states import ACCEPT_INVITE_CODE, ACCEPT_REMOVE_CODE, CYCLE_ANALYSIS_MENU, LANGUAGE_SELECTION, PARTNER_MENU, PROFILE_MENU, REGISTER, LOGIN, PASSWORD, MENU, ADD_CYCLE_DATE , HISTORY, REMOVE_PARTNER, SETTINGS, ViewProfile
-from handlers.login_handlers import handle_login, handle_password
-from languages import get_message
-from telegram import Update, ReplyKeyboardMarkup
-from utils import load_user_data, save_user_data
-from menus import get_main_menu,handle_initial_choice, handle_menu, cancel
-from telegram.ext import ContextTypes 
-from config import TELEGRAM_BOT_TOKEN
-from handlers.cycle.add_cycle_handlers import add_cycle_conversation, start_add_cycle
-# from handlers.setting.setting import settings_conversation, start_settings
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import logging
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram.ext import Application,ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
+from config import BOT_TOKEN
+from constants import *
 
-# -------------------
-# Restore user state before any handler
-# -------------------
-# async def restore_user_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     user_data = context.user_data
-#     last_state = user_data.get("last_state", "menu")  
-#     if last_state == "menu":
-#         return await handle_menu(update, context)
+# Import handlers from modules
+from modules.auth.handlers import start_login, get_login_username, get_login_password, start_register, get_register_username, get_register_email, get_register_password, get_register_sex 
+from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
+from modules.users.partner_handler import  start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
+from modules.periods.handlers import handle_period_date, show_period_history, start_track_period, get_period_start, get_period_symptoms, get_period_medication
+from modules.analysis.handlers import show_cycle_analysis
+from utils.token_store import get_token
 
-#     elif last_state == "add_cycle":
-#         return await start_add_cycle(update, context)
-#     elif last_state == "accept_invite":
-#             return await handle_accept_invite_code(update, context)
-#     else:
-#         return await handle_menu(update, context)
-
-async def restore_user_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    last_state = context.user_data.get("state", MENU)
-
-    if last_state == MENU:
-        return await handle_menu(update, context)
-    elif last_state == ADD_CYCLE_DATE:
-        return await start_add_cycle(update, context)
-    elif last_state == ACCEPT_INVITE_CODE:
-        return await handle_accept_invite_code(update, context)
-    elif last_state == ACCEPT_REMOVE_CODE:
-        return await handle_accept_remove_code(update, context)
-    else:
-        return await handle_menu(update, context)
-# -------------------
-# Start command
-# -------------------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    chat_id = str(update.message.chat_id)
-    lang = context.user_data.get("language", "en")
-
-    # Load user data
-    user_data = load_user_data()
-
-    if chat_id in user_data and "access" in user_data[chat_id]:
-        # User logged in → show main menu
-        markup, menu_text = get_main_menu(lang)
-        await update.message.reply_text(menu_text, reply_markup=markup)
-
-        context.user_data['state'] = MENU
-        return MENU
-    else:
-        reply_keyboard = [
-            [get_message(lang, "auth", "register"), get_message(lang, "auth", "login")]
-        ]
-        await update.message.reply_text(
-            get_message(lang, "welcome", "choose_option"),
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-        )
-        context.user_data['state'] = REGISTER
-        return REGISTER
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
 
 
 
-
-# -------------------
-# Save state and tokens
-# -------------------
-def save_state(chat_id: str, context: ContextTypes.DEFAULT_TYPE):
-    user_data = load_user_data()
-    data = {
-        "access": context.bot_data.get('user_tokens', {}).get(chat_id, {}).get('access'),
-        "refresh": context.bot_data.get('user_tokens', {}).get(chat_id, {}).get('refresh'),
-        "state": context.user_data.get('state'),
-        "username": context.user_data.get('username'),
-        "language": context.user_data.get('language', 'en')
-    }
-    user_data[chat_id] = data
-    save_user_data(user_data)
-
-# -------------------
-# Main
-# -------------------
 def main():
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-
-    # Load user tokens
-    user_data = load_user_data()
-    bot_tokens = {
-        chat_id: {"access": info["access"], "refresh": info.get("refresh")}
-        for chat_id, info in user_data.items() if "access" in info
-    }
-    application.bot_data['user_tokens'] = bot_tokens
-
-    # Main conversation (register/login/menu)
-    main_conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            REGISTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_initial_choice)],
-            LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_login)],
-            PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_password)],
-            MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)],
-            SETTINGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],  # Add this
-            LANGUAGE_SELECTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings)],  # Add this
-            HISTORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, restore_user_state)],
-            ADD_CYCLE_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, restore_user_state)],  
-            PROFILE_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, start_profile)],
-            ViewProfile: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_profile)],
-            # cycle analysis state
-            CYCLE_ANALYSIS_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, cycle_analysis)],
-            PARTNER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)],
-            ACCEPT_INVITE_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_accept_invite_code)],
-            ACCEPT_REMOVE_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_accept_remove_code)],
+    application = Application.builder().token(BOT_TOKEN).build()
 
 
-            
-            
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-        name="main_conversation",
-        conversation_timeout=300,
-        allow_reentry=True
-    )
-    application.add_handler(main_conv, group=0)
 
-    # Add Cycle conversation
-    application.add_handler(add_cycle_conversation, group=1)
-
-    # application.add_handler(settings_conversation)
     
-    # Global catch-all
-    application.add_handler(
-        MessageHandler(
-            filters.TEXT 
-            & ~filters.COMMAND 
-            & ~filters.Regex("^(📜 View History|مشاهده تاریخچه)$"),
-            restore_user_state
-        ),
-        group=1
-    )
+    # application.add_handler(CommandHandler('testweb', test_webapp))
+    # application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
 
-    logger.info("Bot is starting...")
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', show_dashboard)],
+        states={
+            MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, show_dashboard)],
+            LOGIN_USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_login_username)],
+            LOGIN_PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_login_password)],
+            REGISTER_USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_register_username)],
+            REGISTER_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_register_email)],
+            REGISTER_PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_register_password)],
+            REGISTER_SEX: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_register_sex)],
+            DASHBOARD: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_dashboard)],
+            PROFILE_VIEW: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_profile_view)],
+            PARTNER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_partner_menu)],
+            ACCEPT_INVITATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_accept_invitation)],
+            REMOVE_PARTNER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_remove_partner)],
+            TRACK_PERIOD_START: [MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_period_date)],  # ← FIXED
+            TRACK_PERIOD_SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_period_symptoms)],
+            TRACK_PERIOD_MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_period_medication)],
+        },
+        fallbacks=[CommandHandler('cancel', lambda u, c: ConversationHandler.END)]
+    )
+    
+    application.add_handler(conv_handler)
+    
+    # Optional: direct commands
+    application.add_handler(CommandHandler('profile', show_profile))
+    application.add_handler(CommandHandler('partner', start_partner_menu))
+    application.add_handler(CommandHandler('history', show_period_history))
+    application.add_handler(CommandHandler('track', start_track_period))
+    application.add_handler(CommandHandler('analysis', show_cycle_analysis))
+    
+    print("🤖 Period Tracker Bot is running...")
     application.run_polling()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
