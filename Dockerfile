@@ -1,5 +1,5 @@
 # Use official Python 3.12 image
-FROM python:3.12-slim
+FROM registry.uid.ir/uid/python:3
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
