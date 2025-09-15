@@ -1,10 +1,20 @@
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
-from constants import MAIN_MENU, LOGIN_USERNAME, LOGIN_PASSWORD, REGISTER_USERNAME, REGISTER_EMAIL, REGISTER_PASSWORD, REGISTER_SEX
+from constants import MAIN_MENU, LOGIN_USERNAME, LOGIN_PASSWORD, REGISTER_USERNAME, REGISTER_EMAIL, REGISTER_PASSWORD, REGISTER_SEX, START_LOGIN, START_REGISTER
 from utils.token_store import set_token
 from .api import register_user, login_user
 from utils.validators import validate_username, validate_email, validate_password, validate_sex
 from modules.users.handlers import show_dashboard
+
+async def handel_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "Login":
+        return START_LOGIN
+    elif text == "Register":
+        return START_REGISTER
+
+
+
 
 async def start_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Start login process"""

@@ -22,4 +22,4 @@ COPY . .
 # EXPOSE 8443
 
 # Run the bot
-CMD ["python", "main.py"]
+CMD ["python", "bot.py"]

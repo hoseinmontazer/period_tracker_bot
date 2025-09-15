@@ -1,4 +1,5 @@
 import json
+import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, Update, ReplyKeyboardRemove, WebAppInfo 
 from telegram.ext import ContextTypes
 from constants import DASHBOARD, TRACK_PERIOD_START, TRACK_PERIOD_SYMPTOMS, TRACK_PERIOD_MEDICATION
@@ -45,7 +46,8 @@ async def start_track_period(update, context):
     web_app_url = "https://calendar.shirpala.ir/period_calendar"
 
     keyboard = [
-        [KeyboardButton(text="📅 Test Web App", web_app=WebAppInfo(url=web_app_url))]
+        [KeyboardButton(text="📅 Period Start Date", web_app=WebAppInfo(url=web_app_url))],
+        ["⬅️ Back to Dashboard"]
     ]
 
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -59,44 +61,50 @@ async def start_track_period(update, context):
 
 async def handle_period_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Web app data received!")
-    
-    try:
-        web_app_data = update.effective_message.web_app_data
-        if web_app_data and web_app_data.data:
-            # Parse JSON from WebApp
-            data_dict = json.loads(web_app_data.data)
-            selected_date = data_dict.get("date")  # فقط YYYY-MM-DD
-            print(f"Received date from web app: {selected_date}")
-            
-            # Store date in user context
-            context.user_data["current_period"] = {"start_date": selected_date}
+    text = update.message.text
+    print(text)
+    if text == "⬅️ Back to Dashboard":
+        from modules.users.handlers import show_dashboard
+        return await show_dashboard(update, context)
+    else:
+        try:
+            print(">>>>>>>>>")
+            web_app_data = update.effective_message.web_app_data
+            if web_app_data and web_app_data.data:
+                # Parse JSON from WebApp
+                data_dict = json.loads(web_app_data.data)
+                selected_date = data_dict.get("date")  
+                print(f"Received date from web app: {selected_date}")
+                
+                # Store date in user context
+                context.user_data["current_period"] = {"start_date": selected_date}
 
-            # Keyboard for next step
-            keyboard = [["Skip", "Back to Dashboard"]]
-            reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+                # Keyboard for next step
+                keyboard = [["Skip", "Back to Dashboard"]]
+                reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
 
+                await update.message.reply_text(
+                    f"✅ Selected start date: {selected_date}\n\n"
+                    "Now, please describe any symptoms you're experiencing:\n"
+                    "(Type 'skip' to skip this step)",
+                    reply_markup=reply_markup
+                )
+                return TRACK_PERIOD_SYMPTOMS
+            else:
+                print("No web app data found in message")
+                await update.message.reply_text(
+                    "❌ No date received. Please try selecting the date again.",
+                    reply_markup=ReplyKeyboardRemove()
+                )
+                return await start_track_period(update, context)
+                
+        except Exception as e:
+            logging.exception("Error handling web app data")
             await update.message.reply_text(
-                f"✅ Selected start date: {selected_date}\n\n"
-                "Now, please describe any symptoms you're experiencing:\n"
-                "(Type 'skip' to skip this step)",
-                reply_markup=reply_markup
-            )
-            return TRACK_PERIOD_SYMPTOMS
-        else:
-            print("No web app data found in message")
-            await update.message.reply_text(
-                "❌ No date received. Please try selecting the date again.",
+                "❌ An error occurred. Please try again.",
                 reply_markup=ReplyKeyboardRemove()
             )
             return await start_track_period(update, context)
-            
-    except Exception as e:
-        logging.exception("Error handling web app data")
-        await update.message.reply_text(
-            "❌ An error occurred. Please try again.",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return await start_track_period(update, context)
 
 
 # --- Get period start ---

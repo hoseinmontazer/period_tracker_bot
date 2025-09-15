@@ -42,7 +42,10 @@ async def remove_partner(token, remove_code):
     """Remove partner"""
     url = f"{BASE_URL}/api/user/partner/remove/"
     headers = {"Authorization": f"Bearer {token}"}
-    data = {"remove_code": remove_code}
+    if remove_code == None:
+        data = {}
+    else :
+        data = {"remove_code": remove_code}
     
     async with aiohttp.ClientSession() as session:
         async with session.post(url, data=data, headers=headers) as response:

@@ -1,7 +1,7 @@
 import json
 import os
 
-TOKEN_FILE = "user_tokens.json"
+TOKEN_FILE = "./data/user_tokens.json"
 
 def load_tokens():
     """Load all tokens from file."""
