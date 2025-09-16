@@ -7,6 +7,7 @@ from constants import *
 
 # Import handlers from modules
 from modules.auth.handlers import handel_start, start_login, get_login_username, get_login_password, start_register, get_register_username, get_register_email, get_register_password, get_register_sex 
+from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
 from modules.periods.handlers import handle_period_date, show_period_history, start_track_period, get_period_start, get_period_symptoms, get_period_medication
@@ -54,6 +55,12 @@ def main():
                                 ],
             TRACK_PERIOD_SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_period_symptoms)],
             TRACK_PERIOD_MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_period_medication)],
+            EDIT_FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_first_name)],
+            EDIT_LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_last_name)],
+            EDIT_CYCLE_LENGTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_cycle_length)],
+            EDIT_PERIOD_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_period_duration)],
+            # EDIT_FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_first_name)],
+
         },
         fallbacks=[CommandHandler('cancel', lambda u, c: ConversationHandler.END)],
         name="my_conversation_handler",  # <--- Give it a unique name here

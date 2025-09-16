@@ -14,8 +14,8 @@ async def start_partner_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("Please login first.")
         return DASHBOARD
     keyboard = [
+        ["🗓️ View Partner Cycle", "💬 Send Message to Partner"],
         ["🤝 Add Partner", "❌ Remove Partner"],
-        ["💬 Send Message to Partner"],
         ["⬅️ Back to Dashboard"]
     ]
 

@@ -1,37 +1,39 @@
 def format_profile_data(profile: dict) -> str:
-    """Format user profile for Telegram message"""
-    user = profile.get("user", {})
-    username = user.get("username", "N/A")
-    email = user.get("email", "N/A")
-    sex = user.get("sex", "N/A").capitalize()
-
-    first_name = profile.get("first_name") or "-"
-    last_name = profile.get("last_name") or "-"
-    cycle_length = profile.get("cycle_length", "N/A")
-    period_duration = profile.get("period_duration", "N/A")
-
+    """Format user profile for Telegram message in a user-friendly way"""
+    
     partners = profile.get("partners", [])
-    if partners:
-        partners_text = "\n".join(
-            [f"👥 {p.get('username', 'N/A')} ({p.get('email', '-')})" for p in partners]
-        )
-    else:
-        partners_text = "No partners connected."
+    partners_text = ", ".join([p.get("username", "N/A") for p in partners]) or "None"
 
-    msg = (
-        f"*👤 Profile Information*\n\n"
-        f"*Username:* {username}\n"
-        f"*Email:* {email}\n"
-        f"*Sex:* {sex}\n"
-        f"*First Name:* {first_name}\n"
-        f"*Last Name:* {last_name}\n"
-        f"*Cycle Length:* {cycle_length} days\n"
-        f"*Period Duration:* {period_duration} days\n\n"
-        f"*Partners:*\n{partners_text}"
-    )
+    msg = "\n".join([
+        f"👤 Username: {profile.get('username', '')}",
+        f"📧 Email: {profile.get('email', '')}",
+        f"📝 First Name: {profile.get('first_name', '-')}",
+        f"📝 Last Name: {profile.get('last_name', '-')}",
+        f"🔄 Cycle Length: {profile.get('cycle_length', '-') } days",
+        f"📅 Period Duration: {profile.get('period_duration', '-') } days",
+        f"🧑‍🤝‍🧑 Partners: {partners_text}",
+        f"⚧ Sex: {profile.get('sex', '-')}"
+    ])
+    
     return msg
 
-    return formatted
+
+def format_user_profile(profile: dict) -> str:
+    """
+    Convert the API response to a user-friendly string
+    """
+    lines = [
+        f"👤 Username: {profile.get('username', '')}",
+        f"📧 Email: {profile.get('email', '')}",
+        f"📝 First Name: {profile.get('first_name', '')}",
+        f"📝 Last Name: {profile.get('last_name', '')}",
+        f"🔄 Cycle Length: {profile.get('cycle_length', '')} days",
+        f"📅 Period Duration: {profile.get('period_duration', '')} days",
+        f"🧑‍🤝‍🧑 Partners: {', '.join([p['username'] for p in profile.get('partners', [])]) or 'None'}",
+        f"⚧ Sex: {profile.get('sex', '')}"
+    ]
+    return "\n".join(lines)
+
 
 def format_period_data(periods_data):
     """Format period data for display"""

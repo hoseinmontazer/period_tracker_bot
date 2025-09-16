@@ -1,6 +1,6 @@
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
-from constants import DASHBOARD, LOGIN_USERNAME, MAIN_MENU, PROFILE_VIEW, PARTNER_MENU, ACCEPT_INVITATION, REMOVE_PARTNER, START
+from constants import DASHBOARD, LOGIN_USERNAME, MAIN_MENU, PROFILE_VIEW, PARTNER_MENU, ACCEPT_INVITATION, REMOVE_PARTNER, SETTINGS, START
 from modules.users.partner_handler import start_partner_menu
 from utils.helpers import format_profile_data
 from utils.token_store import get_token
@@ -10,7 +10,7 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show user dashboard"""
     # token = context.user_data.get("token")
     # username = context.user_data.get("username", "User")
-
+    print("show_dashboard")
     chat_id = update.effective_chat.id
     token = context.user_data.get("token") or get_token(chat_id)
     
@@ -28,7 +28,7 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = [
             ["📅 Track Period", "📊 Cycle Analysis"],
-            ["👤 My Profile", "👥 Partner"],
+            ["⚙️ Setting", "👥 Partner"],
             ["📋 Period History"]
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -45,6 +45,8 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("text ---> " , text)
     if text == "👤 My Profile":
         return await show_profile(update, context)
+    elif text == "⚙️ Setting":
+        return await handle_setting(update, context)
     elif text == "👥 Partner":
         return await start_partner_menu(update, context)
     elif text == "📅 Track Period":
@@ -62,12 +64,14 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📋 Period History":
         from modules.periods.handlers import show_period_history
         return await show_period_history(update, context)
+    elif text == "✍️ Edit Profile":
+        from modules.users.edit_profile import handle_edit_profile
+        return await handle_edit_profile(update, context)
     elif text == "⬅️ Back to Dashboard":
         from modules.users.handlers import show_dashboard
         return await show_dashboard(update, context)
-    
     await update.message.reply_text("Please use the menu options.")
-    return DASHBOARD
+    return MAIN_MENU
 
 async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show user profile"""
@@ -80,7 +84,7 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_chat_action(action="typing")
     profile_data = await get_profile(token)
-    
+    print("profile_data --- >",profile_data)
     if "detail" in profile_data:
         await update.message.reply_text("❌ Error loading profile.")
     else:
@@ -89,7 +93,7 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = [["⬅️ Back to Dashboard"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text("Your profile is :?", reply_markup=reply_markup)
+    await update.message.reply_text("Your profile ", reply_markup=reply_markup)
     return PROFILE_VIEW
 
 async def handle_profile_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -100,5 +104,24 @@ async def handle_profile_view(update: Update, context: ContextTypes.DEFAULT_TYPE
         return await show_dashboard(update, context)
     
     await update.message.reply_text("Please use the menu options.")
-    return PROFILE_VIEW
+    return DASHBOARD
 
+async def handle_setting(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show setting menu"""
+    print("text ---> ")
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
+        
+    keyboard = [
+        ["✍️ Edit Profile","👤 My Profile"],
+        ["⬅️ Back to Dashboard"]
+    ]
+
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    
+    await update.message.reply_text("⚙️ Settings:", reply_markup=reply_markup)
+    return DASHBOARD 
