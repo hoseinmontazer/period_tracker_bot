@@ -33,8 +33,22 @@ async def show_period_history(update: Update, context: ContextTypes.DEFAULT_TYPE
     return DASHBOARD
 
 
+async def handler_period_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show partner menu"""
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    print("handler_period_menu")
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
+    keyboard = [
+        ["➕ Add Period", "✍️ Edit Period"],
+        ["⬅️ Back to Dashboard"]
+    ]
 
-
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text("🗓️ Please select an option for managing periods:", reply_markup=reply_markup)    
+    return DASHBOARD
 
 
 #add perios

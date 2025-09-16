@@ -42,20 +42,29 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle dashboard actions"""
     text = update.message.text
-    print("text" , text)
+    print("text ---> " , text)
     if text == "👤 My Profile":
         return await show_profile(update, context)
     elif text == "👥 Partner":
         return await start_partner_menu(update, context)
     elif text == "📅 Track Period":
+        from modules.periods.handlers import handler_period_menu
+        return await handler_period_menu(update, context)
+    elif text == "➕ Add Period":
         from modules.periods.handlers import start_track_period
         return await start_track_period(update, context)
+    elif text == "✍️ Edit Period":
+        from modules.periods.handlers import start_edit_period
+        return await start_edit_period(update, context)
     elif text == "📊 Cycle Analysis":
         from modules.analysis.handlers import show_cycle_analysis
         return await show_cycle_analysis(update, context)
     elif text == "📋 Period History":
         from modules.periods.handlers import show_period_history
         return await show_period_history(update, context)
+    elif text == "⬅️ Back to Dashboard":
+        from modules.users.handlers import show_dashboard
+        return await show_dashboard(update, context)
     
     await update.message.reply_text("Please use the menu options.")
     return DASHBOARD
