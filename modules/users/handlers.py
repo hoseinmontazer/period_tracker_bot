@@ -56,8 +56,11 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         from modules.periods.handlers import start_track_period
         return await start_track_period(update, context)
     elif text == "✍️ Edit Period":
-        from modules.periods.handlers import start_edit_period
-        return await start_edit_period(update, context)
+        from modules.periods.handlers import handel_start_delete_period
+        return await handel_start_delete_period(update, context)
+    elif text == "🗑️ Delete Period":
+        from modules.periods.delete_period import handel_start_delete_period
+        return await handel_start_delete_period(update, context)
     elif text == "📊 Cycle Analysis":
         from modules.analysis.handlers import show_cycle_analysis
         return await show_cycle_analysis(update, context)

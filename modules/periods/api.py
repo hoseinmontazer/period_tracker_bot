@@ -20,7 +20,6 @@ async def create_period(token, start_date, cycle_length, period_duration, sympto
         "Authorization": f"Bearer {token}"
     }
 
-    # همه مقادیر باید string باشند
     data = {
         "start_date": str(start_date),
         "cycle_length": str(cycle_length),
@@ -55,3 +54,21 @@ async def update_latest_period(token, end_date):
     async with aiohttp.ClientSession() as session:
         async with session.patch(url, data=data, headers=headers) as response:
             return await response.json()
+        
+
+async def delete_period(token,id):
+    """ Delete Preriod id """
+    url = f"{BASE_URL}/api/periods/{id}/"
+    headers = {"Authorization" : f"Bearer {token}"}
+
+    async with aiohttp.ClientSession() as session:
+        # Use session.delete() for a DELETE request
+        async with session.delete(url, headers=headers) as response:
+            if response.status == 204:  # 204 No Content is a common success status for DELETE
+                return {"success": True, "message": "Period deleted successfully"}
+            else:
+                try:
+                    return await response.json()
+                except aiohttp.client_exceptions.ContentTypeError:
+                    return {"success": False, "message": f"Server responded with status {response.status} and no JSON content."}
+

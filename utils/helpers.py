@@ -62,6 +62,8 @@ def format_single_period(period):
         formatted += f"• Start: {period['start_date']}\n"
     if period.get("end_date"):
         formatted += f"• End: {period['end_date']}\n"
+    if period.get("predicted_end_date"):
+        formatted += f"• Predict End: {period['predicted_end_date']}\n"
     if period.get("cycle_length"):
         formatted += f"• Cycle: {period['cycle_length']} days\n"
     if period.get("period_duration"):
@@ -70,6 +72,9 @@ def format_single_period(period):
         formatted += f"• Symptoms: {period['symptoms']}\n"
     if period.get("medication"):
         formatted += f"• Medication: {period['medication']}\n"
+    if period.get("next_period_start_date"):
+        formatted += f"• Next Period: {period['next_period_start_date']}\n"
+
     return formatted
 
 # def format_analysis_data(analysis_data):

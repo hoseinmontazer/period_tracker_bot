@@ -7,6 +7,7 @@ from constants import *
 
 # Import handlers from modules
 from modules.auth.handlers import handel_start, start_login, get_login_username, get_login_password, start_register, get_register_username, get_register_email, get_register_password, get_register_sex 
+from modules.periods.delete_period import  handel_start_delete_period, start_delete_period
 from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
@@ -59,7 +60,8 @@ def main():
             EDIT_LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_last_name)],
             EDIT_CYCLE_LENGTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_cycle_length)],
             EDIT_PERIOD_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_period_duration)],
-            # EDIT_FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_first_name)],
+            START_DELETE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handel_start_delete_period)],
+            CONFIRM_DELETE: [MessageHandler(filters.TEXT & ~filters.COMMAND, start_delete_period)],
 
         },
         fallbacks=[CommandHandler('cancel', lambda u, c: ConversationHandler.END)],

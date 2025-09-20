@@ -23,7 +23,7 @@ async def show_period_history(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     await update.message.reply_chat_action(action="typing")
     periods = await get_all_periods(token)
-    
+    print("--->", periods)
     if isinstance(periods, list):
         formatted_data = format_period_data(periods)
         await update.message.reply_text(formatted_data, parse_mode='Markdown')
@@ -43,6 +43,7 @@ async def handler_period_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
         return DASHBOARD
     keyboard = [
         ["➕ Add Period", "✍️ Edit Period"],
+        ["🗑️ Delete Period"],
         ["⬅️ Back to Dashboard"]
     ]
 
@@ -189,3 +190,5 @@ async def get_period_medication(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("❌ Failed to track period.")
 
     return await show_dashboard(update, context)
+
+
