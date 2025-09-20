@@ -1,6 +1,7 @@
 import datetime
 import logging
 from pathlib import Path
+from venv import logger
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import Application,ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler ,PicklePersistence
 from config import BOT_TOKEN
@@ -83,16 +84,25 @@ def main():
     application.add_handler(CommandHandler('track', start_track_period))
     application.add_handler(CommandHandler('analysis', show_cycle_analysis))
     
-    job_queue = application.job_queue
 
-    # job_queue.run_daily(
-    #     daily_suggestion_callback,         # just pass the async callback
-    #     time=datetime.time(hour=17, minute=18)  # 17:14
-    # )
-    job_queue.run_once(
-        daily_suggestion_callback,
-        when=10  # in 10 seconds from now
-    )
+    job_queue = application.job_queue
+    if job_queue:
+        # Run every day at 09:00
+        job_queue.run_daily(
+            daily_suggestion_callback,
+            time=datetime.time(hour=9, minute=0, tzinfo=datetime.timezone.utc)  # adjust tz if needed
+        )
+
+        # Run every day at 21:00
+        job_queue.run_daily(
+            daily_suggestion_callback,
+            time=datetime.time(hour=21, minute=0, tzinfo=datetime.timezone.utc)
+        )
+
+        logger.info("Scheduled jobs at 09:00 and 21:00")
+    else:
+        logger.warning("JobQueue not available")
+
 
     print("🤖 Period Tracker Bot is running...")
     application.run_polling()
