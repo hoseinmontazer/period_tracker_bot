@@ -80,6 +80,9 @@ async def handle_partner_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
     
         await update.message.reply_text("We're working hard on this! You'll be able to message your partner soon.")
         return PARTNER_MENU
+    elif text == "🗓️ View Partner Cycle":
+        from modules.periods.handlers import show_partner_period_history
+        return await show_partner_period_history(update, context)
     elif text == "⬅️ Back to Dashboard":
         from modules.users.handlers import show_dashboard
         return await show_dashboard(update, context)

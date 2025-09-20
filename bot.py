@@ -1,3 +1,4 @@
+import datetime
 import logging
 from pathlib import Path
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
@@ -8,12 +9,15 @@ from constants import *
 # Import handlers from modules
 from modules.auth.handlers import handel_start, start_login, get_login_username, get_login_password, start_register, get_register_username, get_register_email, get_register_password, get_register_sex 
 from modules.periods.delete_period import  handel_start_delete_period, start_delete_period
+from modules.schedulers.daily_suggestion import daily_suggestion_callback
 from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
 from modules.periods.handlers import handle_period_date, show_period_history, start_track_period, get_period_start, get_period_symptoms, get_period_medication
 from modules.analysis.handlers import show_cycle_analysis
 from utils.token_store import get_token
+
+
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -79,6 +83,17 @@ def main():
     application.add_handler(CommandHandler('track', start_track_period))
     application.add_handler(CommandHandler('analysis', show_cycle_analysis))
     
+    job_queue = application.job_queue
+
+    # job_queue.run_daily(
+    #     daily_suggestion_callback,         # just pass the async callback
+    #     time=datetime.time(hour=17, minute=18)  # 17:14
+    # )
+    job_queue.run_once(
+        daily_suggestion_callback,
+        when=10  # in 10 seconds from now
+    )
+
     print("🤖 Period Tracker Bot is running...")
     application.run_polling()
 

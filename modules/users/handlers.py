@@ -23,6 +23,13 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔐 Please login or register first:", reply_markup=reply_markup)
         return START 
     else:
+
+        # Store chat_id in bot_data for daily suggestions
+        users = context.application.bot_data.setdefault("users", set())
+        if chat_id not in users:
+            users.add(chat_id)
+            print(f"Added chat_id {chat_id} to bot_data['users']")
+
         user = update.effective_user
         username = user.username  
 

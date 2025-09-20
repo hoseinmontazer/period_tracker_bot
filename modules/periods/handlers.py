@@ -23,7 +23,29 @@ async def show_period_history(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     await update.message.reply_chat_action(action="typing")
     periods = await get_all_periods(token)
-    print("--->", periods)
+
+    if isinstance(periods, list):
+        formatted_data = format_period_data(periods)
+        await update.message.reply_text(formatted_data, parse_mode='Markdown')
+    else:
+        await update.message.reply_text("❌ No period history found.")
+    
+    return DASHBOARD
+
+async def show_partner_period_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show period history"""
+    # token = context.user_data.get("token")
+
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
+    partner = "partner"
+    await update.message.reply_chat_action(action="typing")
+    periods = await get_all_periods(token, partner)
+
     if isinstance(periods, list):
         formatted_data = format_period_data(periods)
         await update.message.reply_text(formatted_data, parse_mode='Markdown')

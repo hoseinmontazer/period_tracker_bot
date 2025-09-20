@@ -2,11 +2,13 @@ import logging
 import aiohttp
 from config import BASE_URL
 
-async def get_all_periods(token):
+async def get_all_periods(token: str, partner: str = None):
     """Get all periods"""
     url = f"{BASE_URL}/api/periods/"
     headers = {"Authorization": f"Bearer {token}"}
-    
+    if partner:
+        print(" partner ---->" , partner)
+        headers["role"] = partner
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
             return await response.json()
