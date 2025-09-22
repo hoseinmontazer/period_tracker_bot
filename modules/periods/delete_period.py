@@ -3,6 +3,7 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from constants import  CONFIRM_DELETE, DASHBOARD, START_DELETE
+from utils.get_period_id_from_user_choice import get_period_id_from_user_choice
 from modules.periods.api import delete_period, get_all_periods
 from modules.users.handlers import show_dashboard
 from utils.token_store import get_token
@@ -27,7 +28,7 @@ async def handel_start_delete_period(update: Update, context: ContextTypes.DEFAU
             await update.message.reply_text("Are you sure you want to delete this cycle? (yes/no)")
             return CONFIRM_DELETE
         except ValueError:
-            await update.message.reply_text("Invalid cycle ID. Please send a number. Or Back to Dashboard.", reply_markup=reply_markup)
+            await update.message.reply_text("Please send a number. Or Back to Dashboard.", reply_markup=reply_markup)
             return START_DELETE
 
     
@@ -76,22 +77,3 @@ async def start_delete_period(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         return await show_dashboard(update, context)
 
-def get_period_id_from_user_choice(period_list, user_choice_str):
-    try:
-        print(period_list)
-        # Convert the string to an integer
-        choice_int = int(user_choice_str)
-        # Check if the number is within the valid range (1 to list length)
-        if 1 <= choice_int <= len(period_list):
-            # The list index is one less than the user's choice
-            index = choice_int - 1
-            # Retrieve the dictionary from the list
-            selected_period = period_list[index]
-            # Return the 'id' from the selected dictionary
-            return selected_period.get('id')
-        else:
-            print("Invalid choice. Please select a number from the list.")
-            return None
-    except ValueError:
-        print("Invalid input. Please enter a number.")
-        return None

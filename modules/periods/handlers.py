@@ -2,6 +2,7 @@ import json
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, Update, ReplyKeyboardRemove, WebAppInfo 
 from telegram.ext import ContextTypes
+from config import WEB_APP_URL
 from constants import DASHBOARD, TRACK_PERIOD_START, TRACK_PERIOD_SYMPTOMS, TRACK_PERIOD_MEDICATION
 from modules.users.handlers import handle_dashboard, show_dashboard
 from utils.token_store import get_token
@@ -80,10 +81,10 @@ async def start_track_period(update, context):
     Send a KeyboardButton that opens a WebApp (Mini App).
     User selects a date and sends it directly to the bot.
     """
-    web_app_url = "https://calendar.shirpala.ir/period_calendar"
+
 
     keyboard = [
-        [KeyboardButton(text="📅 Period Start Date", web_app=WebAppInfo(url=web_app_url))],
+        [KeyboardButton(text="📅 Period Start Date", web_app=WebAppInfo(url=WEB_APP_URL))],
         ["⬅️ Back to Dashboard"]
     ]
 

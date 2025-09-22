@@ -74,3 +74,28 @@ async def delete_period(token,id):
                 except aiohttp.client_exceptions.ContentTypeError:
                     return {"success": False, "message": f"Server responded with status {response.status} and no JSON content."}
 
+
+
+async def edit_period(token, period_id, start_date, end_date, cycle_length, period_duration, symptoms=None, medication=None):
+    """ Update a period using form-data (multipart/form-data) like curl --form. """
+    url = f"{BASE_URL}/api/periods/update/"
+    headers = {"Authorization": f"Bearer {token}"}
+    data = {"period_id": str(period_id)}
+
+    if start_date :
+        data["start_date"] = start_date
+    if end_date :
+        data["end_date"] = end_date
+    if cycle_length :
+        data["cycle_length"] = str(cycle_length)
+    if period_duration:
+        data["period_duration"] = str(period_duration)
+    if symptoms:
+        data["symptoms"] = str(symptoms)
+    if medication :
+        data["medication"] = str(medication)
+    print("data to send to edit_period api ----->", data)
+
+    async with aiohttp.ClientSession() as session:
+        async with session.patch(url, data=data, headers=headers) as response:
+            return await response.json()
