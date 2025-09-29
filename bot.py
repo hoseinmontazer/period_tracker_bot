@@ -2,12 +2,13 @@ import datetime
 import logging
 from pathlib import Path
 from venv import logger
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
-from telegram.ext import Application,ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler ,PicklePersistence
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update 
+from telegram.ext import Application,ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler ,PicklePersistence, CallbackQueryHandler
 from config import BOT_TOKEN
 from constants import *
 
 # Import handlers from modules
+from modules.ai.feedback_handler import feedback_handler, text_feedback_handler
 from modules.auth.handlers import handel_start, start_login, get_login_username, get_login_password, start_register, get_register_username, get_register_email, get_register_password, get_register_sex 
 from modules.periods.delete_period import  handel_start_delete_period, start_delete_period
 from modules.periods.edit_period import ask_edit_cycle, ask_edit_duration, ask_edit_end_date, ask_edit_medication, ask_edit_start_date, ask_edit_symptoms, start_edit_period
@@ -79,11 +80,14 @@ def main():
             ASK_EDIT_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_edit_duration)],
             ASK_EDIT_SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_edit_symptoms)],
             ASK_EDIT_MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_edit_medication)],
+            FEEDBACK_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, text_feedback_handler)],
 
 
 
         },
-        fallbacks=[CommandHandler('cancel', lambda u, c: ConversationHandler.END)],
+        fallbacks=[
+            CallbackQueryHandler(feedback_handler, pattern=r"^feedback:\d+:(true|false)$"),
+            CommandHandler('cancel', lambda u, c: ConversationHandler.END)],
         name="my_conversation_handler",  # <--- Give it a unique name here
         persistent=True, # <--- Enable persistence for this handler
     )
@@ -97,7 +101,11 @@ def main():
     application.add_handler(CommandHandler('history', show_period_history))
     application.add_handler(CommandHandler('track', start_track_period))
     application.add_handler(CommandHandler('analysis', show_cycle_analysis))
-    
+    # application.add_handler(CallbackQueryHandler(feedback_handler, pattern=r"^feedback:"))
+    # application.add_handler(
+    #     CallbackQueryHandler(feedback_handler, pattern=r"^feedback:\d+:(true|false)$")
+    # )
+
 
     job_queue = application.job_queue
     if job_queue:
@@ -112,7 +120,7 @@ def main():
             daily_suggestion_callback,
             time=datetime.time(hour=21, minute=0, tzinfo=datetime.timezone.utc)
         )
-
+        job_queue.run_once(daily_suggestion_callback, when=0)
         logger.info("Scheduled jobs at 09:00 and 21:00")
     else:
         logger.warning("JobQueue not available")
