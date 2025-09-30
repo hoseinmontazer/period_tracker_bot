@@ -8,7 +8,7 @@ from config import BOT_TOKEN
 from constants import *
 
 # Import handlers from modules
-from modules.ai.feedback_handler import feedback_handler, text_feedback_handler
+from modules.ai.feedback_handler import feedback_handler, label_selection_handler, reason_handler, text_feedback_handler
 from modules.auth.handlers import handel_start, start_login, get_login_username, get_login_password, start_register, get_register_username, get_register_email, get_register_password, get_register_sex 
 from modules.periods.delete_period import  handel_start_delete_period, start_delete_period
 from modules.periods.edit_period import ask_edit_cycle, ask_edit_duration, ask_edit_end_date, ask_edit_medication, ask_edit_start_date, ask_edit_symptoms, start_edit_period
@@ -80,9 +80,13 @@ def main():
             ASK_EDIT_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_edit_duration)],
             ASK_EDIT_SYMPTOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_edit_symptoms)],
             ASK_EDIT_MEDICATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_edit_medication)],
+            FEEDBACK_REASON: [
+                # Handle reason selection (timing/advice/missing_info/other)
+                CallbackQueryHandler(reason_handler, pattern=r"^reason:\d+:(timing|advice|missing_info|other)$"),
+                # Handle final label selection from the structured list
+                CallbackQueryHandler(label_selection_handler, pattern=r"^label:\d+:.*$"),
+            ],
             FEEDBACK_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, text_feedback_handler)],
-
-
 
         },
         fallbacks=[
