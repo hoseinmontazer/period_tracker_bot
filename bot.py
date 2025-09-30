@@ -13,11 +13,13 @@ from modules.auth.handlers import handel_start, start_login, get_login_username,
 from modules.periods.delete_period import  handel_start_delete_period, start_delete_period
 from modules.periods.edit_period import ask_edit_cycle, ask_edit_duration, ask_edit_end_date, ask_edit_medication, ask_edit_start_date, ask_edit_symptoms, start_edit_period
 from modules.schedulers.daily_suggestion import daily_suggestion_callback
+from modules.schedulers.wellness_scheduler import wellness_checkin_callback
 from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
 from modules.periods.handlers import handle_period_date, show_period_history, start_track_period, get_period_start, get_period_symptoms, get_period_medication
 from modules.analysis.handlers import show_cycle_analysis
+from modules.wellness.welllness import confirm_submission, get_alcohol, get_anxiety, get_caffeine, get_energy, get_exercise, get_focus, get_mood, get_notes, get_nutrition, get_pain, get_sleep, get_smoking, get_stress, start_wellness
 from utils.token_store import get_token
 
 
@@ -25,7 +27,28 @@ from utils.token_store import get_token
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
+# --- NEW HANDLER FUNCTION ---
+async def scheduled_wellness_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles the first button click from the scheduled wellness message.
+    It manually starts the conversation flow.
+    """
+    query = update.callback_query
+    # Check if the user is already in a conversation (optional but safer)
+    if context.user_data.get('__conversation_timeout_data__') is None:
+        
+        # Manually set the conversation state to the state where the response should go
+        # Since the button click is for stress (which is WELLNESS_STRESS state's entry), 
+        # we will directly call the handler for the next state (get_stress).
+        
+        # We must manually set the current conversation state for persistence to work.
+        context.user_data['__conversation_handler__my_conversation_handler'] = WELLNESS_STRESS
 
+        # Now, call the get_stress handler to process the input and move to the next step (sleep)
+        return await get_stress(update, context)
+    
+    # If the user is already in a conversation, let the main handler deal with it (or ignore)
+    return ConversationHandler.END
 
 
 
@@ -37,6 +60,12 @@ def main():
 
     # 2. Pass the persistence object to the Application builder
     application = Application.builder().token(BOT_TOKEN).persistence(persistence).build()
+    # --- ADD THE NEW DEDICATED CALLBACK HANDLER HERE ---
+    # This must be added BEFORE the main conv_handler so it catches the click first.
+    # It catches any single digit (0-5) which is the pattern for the stress buttons.
+    # We use a non-capturing group for the pattern: r"^(?:[0-5])$"
+    application.add_handler(CallbackQueryHandler(scheduled_wellness_entry, pattern=r"^(?:[0-5])$"))
+    # ---------------------------------------------------
 
     # 3. Add a unique name to your ConversationHandler
     conv_handler = ConversationHandler(
@@ -87,11 +116,33 @@ def main():
                 CallbackQueryHandler(label_selection_handler, pattern=r"^label:\d+:.*$"),
             ],
             FEEDBACK_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, text_feedback_handler)],
+                        # --- WELLNESS STATES ---
+            # All level inputs are handled via CallbackQueryHandler
+            WELLNESS_STRESS:    [CallbackQueryHandler(get_stress,    pattern=r"^st_\d$")],
+            WELLNESS_SLEEP:     [CallbackQueryHandler(get_sleep,     pattern=r"^sl_\d{1,2}$")],
+            WELLNESS_MOOD:      [CallbackQueryHandler(get_mood,      pattern=r"^md_\d$")],
+            WELLNESS_ENERGY:    [CallbackQueryHandler(get_energy,    pattern=r"^en_\d{1,2}$")],
+            WELLNESS_PAIN:      [CallbackQueryHandler(get_pain,      pattern=r"^pa_\d$")],
+            WELLNESS_EXERCISE:  [CallbackQueryHandler(get_exercise,  pattern=r"^ex_\d{1,3}$")],
+            WELLNESS_NUTRITION: [CallbackQueryHandler(get_nutrition, pattern=r"^nu_\d$")],
+            WELLNESS_CAFFEINE:  [CallbackQueryHandler(get_caffeine,  pattern=r"^ca_\d$")],
+            WELLNESS_ALCOHOL:   [CallbackQueryHandler(get_alcohol,   pattern=r"^al_\d$")],
+            WELLNESS_SMOKING:   [CallbackQueryHandler(get_smoking,   pattern=r"^sm_\d$")],
+            WELLNESS_ANXIETY:   [CallbackQueryHandler(get_anxiety,   pattern=r"^an_\d$")],
+            WELLNESS_FOCUS:     [CallbackQueryHandler(get_focus,     pattern=r"^fo_\d$")],
+            WELLNESS_NOTES:     [MessageHandler(filters.TEXT & ~filters.COMMAND, get_notes)],
+            WELLNESS_CONFIRM:   [CallbackQueryHandler(confirm_submission, pattern=r"^(submit|cancel)$")],
+
+            # --- END WELLNESS STATES ---
+
 
         },
         fallbacks=[
             CallbackQueryHandler(feedback_handler, pattern=r"^feedback:\d+:(true|false)$"),
+            # Add a manual command to start wellness
+            CommandHandler('wellness', start_wellness), 
             CommandHandler('cancel', lambda u, c: ConversationHandler.END)],
+        
         name="my_conversation_handler",  # <--- Give it a unique name here
         persistent=True, # <--- Enable persistence for this handler
     )
@@ -119,12 +170,19 @@ def main():
             time=datetime.time(hour=9, minute=0, tzinfo=datetime.timezone.utc)  # adjust tz if needed
         )
 
+        # NEW: Schedule Wellness Check-in (e.g., at 12:00 UTC)
+        job_queue.run_daily(
+            wellness_checkin_callback,
+            time=datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)
+        )
+        logger.info("Scheduled wellness check-in at 12:00")
+
         # Run every day at 21:00
         job_queue.run_daily(
             daily_suggestion_callback,
             time=datetime.time(hour=21, minute=0, tzinfo=datetime.timezone.utc)
         )
-        job_queue.run_once(daily_suggestion_callback, when=0)
+        job_queue.run_once(wellness_checkin_callback, when=0)
         logger.info("Scheduled jobs at 09:00 and 21:00")
     else:
         logger.warning("JobQueue not available")
