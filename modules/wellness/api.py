@@ -31,7 +31,6 @@ async def send_wellness(
         "Content-Type": "application/json",
     }
 
-    # آماده‌سازی داده‌ها
     data = {
         "stress_level": stress_level,
         "sleep_hours": sleep_hours,

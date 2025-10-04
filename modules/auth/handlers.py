@@ -1,19 +1,35 @@
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
-from constants import MAIN_MENU, LOGIN_USERNAME, LOGIN_PASSWORD, REGISTER_USERNAME, REGISTER_EMAIL, REGISTER_PASSWORD, REGISTER_SEX, START_LOGIN, START_REGISTER
-from utils.token_store import set_token
+from constants import DASHBOARD, MAIN_MENU, LOGIN_USERNAME, LOGIN_PASSWORD, REGISTER_USERNAME, REGISTER_EMAIL, REGISTER_PASSWORD, REGISTER_SEX, START_LOGIN, START_REGISTER
+from utils.token_store import get_token, set_token
 from .api import register_user, login_user
 from utils.validators import validate_username, validate_email, validate_password, validate_sex
 from modules.users.handlers import show_dashboard
 
 async def handel_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    
     text = update.message.text
-    if text == "Login":
-        return START_LOGIN
-    elif text == "Register":
-        return START_REGISTER
-
-
+    print("handel_start text ---> " , text)
+    if not token:
+        text = update.message.text
+        if text == "Login":
+            await update.message.reply_text("🔐 Please enter your username:")
+            return START_LOGIN
+        elif text == "Register":
+            await update.message.reply_text("📝 Please choose a username:")
+            return START_REGISTER
+        else:
+            keyboard = [
+                ["Login", "Register"]
+            ]
+            reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+            await update.message.reply_text("🔐 Please login or register first:", reply_markup=reply_markup)
+            return MAIN_MENU
+    else:
+        return await show_dashboard(update, context)
 
 
 async def start_login(update: Update, context: ContextTypes.DEFAULT_TYPE):

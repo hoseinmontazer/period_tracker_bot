@@ -81,6 +81,12 @@ async def start_track_period(update, context):
     Send a KeyboardButton that opens a WebApp (Mini App).
     User selects a date and sends it directly to the bot.
     """
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
 
 
     keyboard = [
@@ -91,22 +97,33 @@ async def start_track_period(update, context):
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await update.message.reply_text(
-        "Click the button below to open the mini app and send data directly to the bot:",
+        "Click the button below to open the mini app and send date directly to the bot:",
         reply_markup=reply_markup
     )
     return TRACK_PERIOD_START
 
 
+
 async def handle_period_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Web app data received!")
+#async def handle_period_date(update: Update, context: ContextTypes.DEFAULT_TYPE, data: str):
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
+
+    print("Web app data received! strat period")
     text = update.message.text
     print(text)
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    print(token)
+    
     if text == "⬅️ Back to Dashboard":
-        from modules.users.handlers import show_dashboard
         return await show_dashboard(update, context)
     else:
         try:
-            print(">>>>>>>>>")
             web_app_data = update.effective_message.web_app_data
             if web_app_data and web_app_data.data:
                 # Parse JSON from WebApp
@@ -121,25 +138,47 @@ async def handle_period_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 keyboard = [["Skip", "Back to Dashboard"]]
                 reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
 
-                await update.message.reply_text(
-                    f"✅ Selected start date: {selected_date}\n\n"
-                    "Now, please describe any symptoms you're experiencing:\n"
-                    "(Type 'skip' to skip this step)",
-                    reply_markup=reply_markup
-                )
-                return TRACK_PERIOD_SYMPTOMS
+            #     await update.message.reply_text(
+            #         f"✅ Selected start date: {selected_date}\n\n"
+            #         "Now, please describe any symptoms you're experiencing:\n"
+            #         "(Type 'skip' to skip this step)",
+            #         reply_markup=reply_markup
+            #     )
+            #     return TRACK_PERIOD_SYMPTOMS
+            # else:
+            #     print("No web app data found in messagees")
+            #     await update.message.reply_text(
+            #         "❌ No date received. Please try selecting the date again.",
+            #         reply_markup=ReplyKeyboardRemove()
+            #     )
+            #     return await start_track_period(update, context)
+
+
+
+            result = await create_period(
+                token=token,
+                start_date=selected_date,
+                cycle_length=28,
+                period_duration=5,
+                # symptoms=period_data.get("symptoms"),
+                # medication=period_data.get("medication")
+            )
+
+            print("result is %s",result)
+            if "id" in result:
+                await update.message.reply_text("✅ Period tracked successfully!")
             else:
-                print("No web app data found in message")
-                await update.message.reply_text(
-                    "❌ No date received. Please try selecting the date again.",
-                    reply_markup=ReplyKeyboardRemove()
-                )
-                return await start_track_period(update, context)
-                
+                await update.message.reply_text("❌ Failed to track period.")
+
+            return await show_dashboard(update, context)
+
+
+
+
         except Exception as e:
             logging.exception("Error handling web app data")
             await update.message.reply_text(
-                "❌ An error occurred. Please try again.",
+                f"❌ An error occurred. Please try again. {e}",
                 reply_markup=ReplyKeyboardRemove()
             )
             return await start_track_period(update, context)
@@ -147,6 +186,14 @@ async def handle_period_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 # --- Get period start ---
 async def get_period_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    chat_id = update.effective_chat.id
+    token = context.user_data.get("token") or get_token(chat_id)
+    
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
+
     text = update.message.text.strip()
 
     if text == "Back to Dashboard":
@@ -165,6 +212,7 @@ async def get_period_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Get period symptoms ---
 async def get_period_symptoms(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("start get_period_symptoms")
     text = update.message.text.strip()
 
     if text == "Back to Dashboard":
@@ -180,10 +228,17 @@ async def get_period_symptoms(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # --- Get period medication ---
 async def get_period_medication(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+
+
     text = update.message.text.strip()
     chat_id = update.effective_chat.id
     token = context.user_data.get("token") or get_token(chat_id)
-    print(token)
+    
+    if not token:
+        await update.message.reply_text("Please login first.")
+        return DASHBOARD
+
     period_data = context.user_data.get("current_period", {})
 
     if text == "Back to Dashboard":

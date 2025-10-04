@@ -65,6 +65,10 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "✍️ Edit Period":
         from modules.periods.edit_period import handel_start_edit_period 
         return await handel_start_edit_period(update, context)
+    elif text == "🚪 Logout":
+        from modules.users.logout import handle_logout_profile
+        return await handle_logout_profile(update, context) 
+
     elif text == "🗑️ Delete Period":
         from modules.periods.delete_period import handel_start_delete_period
         return await handel_start_delete_period(update, context)
@@ -128,6 +132,7 @@ async def handle_setting(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     keyboard = [
         ["✍️ Edit Profile","👤 My Profile"],
+        ["🚪 Logout"], 
         ["⬅️ Back to Dashboard"]
     ]
 
