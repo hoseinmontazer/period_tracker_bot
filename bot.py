@@ -152,7 +152,8 @@ def main():
             time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc)
         )
         # job_queue.run_once(wellness_checkin_callback, when=0)
-        job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))
+        # job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))
+        #job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))
 
         # logger.info("Scheduled jobs at 09:00 and 21:00")
     else:
