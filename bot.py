@@ -14,6 +14,8 @@ from modules.periods.delete_period import  handel_start_delete_period, start_del
 from modules.periods.edit_period import ask_edit_cycle, ask_edit_duration, ask_edit_end_date, ask_edit_medication, ask_edit_start_date, ask_edit_symptoms, start_edit_period
 from modules.schedulers.daily_suggestion import daily_suggestion_callback
 from modules.schedulers.wellness_scheduler import handle_webapp_data, handle_webapp_router, wellness_checkin_callback
+from modules.notifications.scheduler import send_notifications_callback
+from modules.notifications.handlers import handle_notification_callback, show_notifications, show_unread_notifications, show_notification_settings
 from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
@@ -125,6 +127,11 @@ def main():
     application.add_handler(CommandHandler('history', show_period_history))
     application.add_handler(CommandHandler('track', start_track_period))
     application.add_handler(CommandHandler('analysis', show_cycle_analysis))
+    application.add_handler(CommandHandler('notifications', show_unread_notifications))
+    application.add_handler(CommandHandler('notif_settings', show_notification_settings))
+    
+    # Notification callback handlers
+    application.add_handler(CallbackQueryHandler(handle_notification_callback, pattern=r"^notif_"))
     # application.add_handler(CallbackQueryHandler(feedback_handler, pattern=r"^feedback:"))
     # application.add_handler(
     #     CallbackQueryHandler(feedback_handler, pattern=r"^feedback:\d+:(true|false)$")
@@ -151,6 +158,14 @@ def main():
             daily_suggestion_callback,
             time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc)
         )
+        
+        # NEW: Schedule notification checks every 2 hours
+        job_queue.run_repeating(
+            send_notifications_callback,
+            interval=7200,  # 2 hours in seconds
+            first=10  # Start 10 seconds after bot starts
+        )
+        logger.info("Scheduled notification checks every 2 hours")
         # job_queue.run_once(wellness_checkin_callback, when=0)
         # job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))
         #job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))

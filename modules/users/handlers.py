@@ -35,8 +35,8 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = [
             ["📅 Track Period", "📊 Cycle Analysis"],
-            ["⚙️ Setting", "👥 Partner"],
-            ["📋 Period History"]
+            ["🔔 Notifications", "👥 Partner"],
+            ["⚙️ Setting", "📋 Period History"]
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         
@@ -81,6 +81,12 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "✍️ Edit Profile":
         from modules.users.edit_profile import handle_edit_profile
         return await handle_edit_profile(update, context)
+    elif text == "🔔 Notifications":
+        from modules.notifications.handlers import show_unread_notifications
+        return await show_unread_notifications(update, context)
+    elif text == "🔔 Notification Settings":
+        from modules.notifications.handlers import show_notification_settings
+        return await show_notification_settings(update, context)
     elif text == "⬅️ Back to Dashboard":
         from modules.users.handlers import show_dashboard
         return await show_dashboard(update, context)
@@ -132,6 +138,7 @@ async def handle_setting(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     keyboard = [
         ["✍️ Edit Profile","👤 My Profile"],
+        ["🔔 Notification Settings"],
         ["🚪 Logout"], 
         ["⬅️ Back to Dashboard"]
     ]
