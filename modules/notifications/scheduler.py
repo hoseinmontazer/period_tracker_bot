@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from .api import get_unread_notifications, mark_notification_read
+from .api import get_unread_notifications, mark_notification_read, get_unread_messages
 
 logger = logging.getLogger(__name__)
 USER_TOKENS_FILE = Path("./data/user_tokens.json")
@@ -56,19 +56,28 @@ async def send_notifications_callback(context: ContextTypes.DEFAULT_TYPE):
             
             if "error" in response:
                 logger.error(f"Error fetching notifications for {chat_id}: {response['error']}")
-                continue
-            
-            notifications = response.get("data", [])
-            count = response.get("count", 0)
-            
-            if count == 0:
-                logger.info(f"No unread notifications for {chat_id}")
-                continue
-            
-            # Send each notification
-            for notif in notifications:
-                await send_single_notification(context, chat_id, notif, token)
+            else:
+                notifications = response.get("data", [])
+                count = response.get("count", 0)
                 
+                if count > 0:
+                    # Send each notification
+                    for notif in notifications:
+                        await send_single_notification(context, chat_id, notif, token)
+                else:
+                    logger.info(f"No unread notifications for {chat_id}")
+            
+            # Also check for unread partner messages
+            messages_response = await get_unread_messages(token)
+            
+            if "error" not in messages_response:
+                messages = messages_response.get("messages", [])
+                msg_count = messages_response.get("count", 0)
+                
+                if msg_count > 0:
+                    # Send notification about unread messages
+                    await send_message_notification(context, chat_id, msg_count, messages[0])
+                    
         except Exception as e:
             logger.error(f"Failed to process notifications for {chat_id}: {e}")
 
@@ -144,3 +153,42 @@ async def check_and_send_immediate_notifications(context: ContextTypes.DEFAULT_T
             
     except Exception as e:
         logger.error(f"Failed to check immediate notifications: {e}")
+
+
+
+async def send_message_notification(context: ContextTypes.DEFAULT_TYPE, chat_id: int, count: int, latest_message: dict):
+    """Send notification about unread partner messages"""
+    try:
+        sender_name = latest_message.get("sender_name", "Your partner")
+        message_preview = latest_message.get("message", "")[:50]
+        
+        if len(latest_message.get("message", "")) > 50:
+            message_preview += "..."
+        
+        text = f"💬 *New Message from {sender_name}*\n\n"
+        text += f"{message_preview}\n\n"
+        
+        if count > 1:
+            text += f"_You have {count} unread messages_"
+        
+        # Create action buttons
+        keyboard = [
+            [
+                InlineKeyboardButton("💬 View Messages", callback_data="view_messages"),
+                InlineKeyboardButton("✉️ Reply", callback_data="reply_message")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Send the notification
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+        
+        logger.info(f"Sent message notification to {chat_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send message notification to {chat_id}: {e}")

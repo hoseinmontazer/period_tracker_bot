@@ -87,6 +87,9 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔔 Notification Settings":
         from modules.notifications.handlers import show_notification_settings
         return await show_notification_settings(update, context)
+    elif text == "💬 Partner Messages" or "View Conversation" in text or text == "✉️ Send Message" or text == "📋 All Messages" or text == "🔄 Refresh":
+        from modules.notifications.messaging_handlers import handle_partner_message_menu
+        return await handle_partner_message_menu(update, context)
     elif text == "⬅️ Back to Dashboard":
         from modules.users.handlers import show_dashboard
         return await show_dashboard(update, context)

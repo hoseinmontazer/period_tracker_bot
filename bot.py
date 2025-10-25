@@ -16,6 +16,7 @@ from modules.schedulers.daily_suggestion import daily_suggestion_callback
 from modules.schedulers.wellness_scheduler import handle_webapp_data, handle_webapp_router, wellness_checkin_callback
 from modules.notifications.scheduler import send_notifications_callback
 from modules.notifications.handlers import handle_notification_callback, show_notifications, show_unread_notifications, show_notification_settings
+from modules.notifications.messaging_handlers import show_partner_messages, handle_partner_message_menu, handle_message_input
 from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
@@ -105,6 +106,7 @@ def main():
                 CallbackQueryHandler(label_selection_handler, pattern=r"^label:\d+:.*$"),
             ],
             FEEDBACK_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, text_feedback_handler)],
+            PARTNER_MESSAGE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message_input)],
 
 
 
@@ -129,6 +131,7 @@ def main():
     application.add_handler(CommandHandler('analysis', show_cycle_analysis))
     application.add_handler(CommandHandler('notifications', show_unread_notifications))
     application.add_handler(CommandHandler('notif_settings', show_notification_settings))
+    application.add_handler(CommandHandler('messages', show_partner_messages))
     
     # Notification callback handlers
     application.add_handler(CallbackQueryHandler(handle_notification_callback, pattern=r"^notif_"))
@@ -149,7 +152,7 @@ def main():
         # NEW: Schedule Wellness Check-in (e.g., at 12:00 UTC)
         job_queue.run_daily(
             wellness_checkin_callback,
-            time=datetime.time(hour=6, minute=2, tzinfo=datetime.timezone.utc)
+            time=datetime.time(hour=18, minute=10, tzinfo=datetime.timezone.utc)
         )
         logger.info("Scheduled wellness check-in at 12:00")
 

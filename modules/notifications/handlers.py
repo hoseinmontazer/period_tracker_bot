@@ -208,6 +208,20 @@ async def handle_notification_callback(update: Update, context: ContextTypes.DEF
             parse_mode="Markdown"
         )
     
+    # Handle message-related callbacks
+    elif action == "view_messages":
+        from modules.notifications.messaging_handlers import show_conversation
+        # Create a fake message object to trigger the handler
+        update.message = query.message
+        update.message.text = "💬 View Conversation"
+        return await show_conversation(update, context)
+    
+    elif action == "reply_message":
+        from modules.notifications.messaging_handlers import start_send_message
+        update.message = query.message
+        update.message.text = "✉️ Send Message"
+        return await start_send_message(update, context)
+    
     return DASHBOARD
 
 

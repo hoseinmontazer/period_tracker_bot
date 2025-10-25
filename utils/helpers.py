@@ -288,3 +288,75 @@ def format_notification_preferences(preferences: dict) -> str:
     message += f"*Preferred Time:* {preferred_time}\n"
     
     return message
+
+
+def format_message_list(messages: list) -> str:
+    """Format message list for display"""
+    if not messages:
+        return "📭 No messages."
+    
+    message_text = "📬 *All Messages*\n\n"
+    
+    for i, msg in enumerate(messages[:20], 1):  # Show max 20
+        sender = msg.get("sender_name", "Unknown")
+        receiver = msg.get("receiver_name", "Unknown")
+        content = msg.get("message", "")
+        is_read = msg.get("is_read", False)
+        created_at = msg.get("created_at", "")
+        
+        # Format date
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            date_str = dt.strftime("%b %d, %I:%M %p")
+        except:
+            date_str = created_at
+        
+        read_status = "✅" if is_read else "🆕"
+        
+        message_text += f"{i}. {read_status} *{sender}* → {receiver}\n"
+        message_text += f"   {content[:60]}{'...' if len(content) > 60 else ''}\n"
+        message_text += f"   📅 {date_str}\n\n"
+    
+    if len(messages) > 20:
+        message_text += f"\n... and {len(messages) - 20} more messages"
+    
+    return message_text
+
+
+def format_conversation(messages: list, partner_name: str, count: int) -> str:
+    """Format conversation for display"""
+    if not messages:
+        return f"💬 *Conversation with {partner_name}*\n\nNo messages yet."
+    
+    message_text = f"💬 *Conversation with {partner_name}*\n"
+    message_text += f"Total messages: {count}\n\n"
+    message_text += "─" * 30 + "\n\n"
+    
+    for msg in messages[-15:]:  # Show last 15 messages
+        sender = msg.get("sender_name", "Unknown")
+        content = msg.get("message", "")
+        created_at = msg.get("created_at", "")
+        
+        # Format date
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            time_str = dt.strftime("%I:%M %p")
+        except:
+            time_str = created_at
+        
+        # Determine if message is from user or partner
+        is_from_partner = sender == partner_name
+        
+        if is_from_partner:
+            message_text += f"👤 *{sender}* ({time_str}):\n"
+        else:
+            message_text += f"🙋 *You* ({time_str}):\n"
+        
+        message_text += f"{content}\n\n"
+    
+    if count > 15:
+        message_text += f"\n_Showing last 15 of {count} messages_"
+    
+    return message_text
