@@ -7,49 +7,24 @@ from utils.token_store import get_token
 from .api import get_profile
 
 async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show user dashboard"""
-    # token = context.user_data.get("token")
-    # username = context.user_data.get("username", "User")
-    print("show_dashboard")
-    chat_id = update.effective_chat.id
-    token = context.user_data.get("token") or get_token(chat_id)
-    
-    if not token:
-        print("token not aviable")
-        keyboard = [
-            ["Login", "Register"]
-        ]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text("🔐 Please login or register first:", reply_markup=reply_markup)
-        return START 
-    else:
-
-        # Store chat_id in bot_data for daily suggestions
-        users = context.application.bot_data.setdefault("users", set())
-        if chat_id not in users:
-            users.add(chat_id)
-            print(f"Added chat_id {chat_id} to bot_data['users']")
-
-        user = update.effective_user
-        username = user.username  
-
-        keyboard = [
-            ["📅 Track Period", "📊 Cycle Analysis"],
-            ["🔔 Notifications", "👥 Partner"],
-            ["⚙️ Setting", "📋 Period History"]
-        ]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        
-        await update.message.reply_text(
-            f"🏠 Welcome back, {username}!",
-            reply_markup=reply_markup
-        )
-        return DASHBOARD
+    """Show user dashboard - redirects to WellBe Health Dashboard"""
+    # Redirect to new health dashboard
+    from modules.health.dashboard import show_health_dashboard
+    return await show_health_dashboard(update, context)
 
 async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle dashboard actions"""
+    """Handle dashboard actions - delegates to health dashboard handler"""
     text = update.message.text
     print("text ---> " , text)
+    
+    # Health Dashboard options
+    if text in ["🩺 Health Modules", "📊 Health Analytics", "📅 Period Tracker", 
+                "💊 Medications", "👥 Care Circle", "🔔 Notifications", 
+                "⚙️ Settings", "ℹ️ About WellBe"]:
+        from modules.health.dashboard import handle_health_dashboard
+        return await handle_health_dashboard(update, context)
+    
+    # Legacy/specific handlers
     if text == "👤 My Profile":
         return await show_profile(update, context)
     elif text == "⚙️ Setting":
@@ -68,7 +43,6 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🚪 Logout":
         from modules.users.logout import handle_logout_profile
         return await handle_logout_profile(update, context) 
-
     elif text == "🗑️ Delete Period":
         from modules.periods.delete_period import handel_start_delete_period
         return await handel_start_delete_period(update, context)
@@ -81,9 +55,6 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "✍️ Edit Profile":
         from modules.users.edit_profile import handle_edit_profile
         return await handle_edit_profile(update, context)
-    elif text == "🔔 Notifications":
-        from modules.notifications.handlers import show_unread_notifications
-        return await show_unread_notifications(update, context)
     elif text == "🔔 Notification Settings":
         from modules.notifications.handlers import show_notification_settings
         return await show_notification_settings(update, context)
@@ -93,8 +64,9 @@ async def handle_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "⬅️ Back to Dashboard":
         from modules.users.handlers import show_dashboard
         return await show_dashboard(update, context)
+    
     await update.message.reply_text("Please use the menu options.")
-    return MAIN_MENU
+    return DASHBOARD
 
 async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show user profile"""

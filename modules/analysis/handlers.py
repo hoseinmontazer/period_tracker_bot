@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from constants import DASHBOARD
+from constants import DASHBOARD, HEALTH_DASHBOARD
 from utils.token_store import get_token
 from .api import cycle_analysis
 from utils.helpers import format_analysis_data
@@ -15,7 +15,7 @@ async def show_cycle_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if not token:
         await update.message.reply_text("Please login first.")
-        return DASHBOARD
+        return HEALTH_DASHBOARD
 
     await update.message.reply_chat_action(action="typing")
     analysis = await cycle_analysis(token)
@@ -26,4 +26,4 @@ async def show_cycle_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await update.message.reply_text("❌ Not enough data for analysis.")
 
-    return DASHBOARD
+    return HEALTH_DASHBOARD

@@ -7,27 +7,42 @@ from utils.validators import validate_username, validate_email, validate_passwor
 from modules.users.handlers import show_dashboard
 
 async def handel_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
+    """Handle start command and login/register selection"""
     chat_id = update.effective_chat.id
     token = context.user_data.get("token") or get_token(chat_id)
     
     text = update.message.text
     print("handel_start text ---> " , text)
+    
     if not token:
-        text = update.message.text
         if text == "Login":
-            await update.message.reply_text("🔐 Please enter your username:")
-            return START_LOGIN
+            await update.message.reply_text("🔐 Please enter your username:", reply_markup=ReplyKeyboardRemove())
+            return LOGIN_USERNAME
         elif text == "Register":
-            await update.message.reply_text("📝 Please choose a username:")
-            return START_REGISTER
+            await update.message.reply_text("📝 Please choose a username:", reply_markup=ReplyKeyboardRemove())
+            return REGISTER_USERNAME
         else:
+            # Show welcome message with login/register options
+            welcome_text = "🏥 *Welcome to WellBe!*\n\n"
+            welcome_text += "Your Complete Health Companion\n\n"
+            welcome_text += "WellBe helps you track and manage:\n"
+            welcome_text += "• 📅 Period & Cycle Tracking\n"
+            welcome_text += "• 💊 Medication Management\n"
+            welcome_text += "• 🏃 Fitness & Activity\n"
+            welcome_text += "• 🍎 Nutrition & Meals\n"
+            welcome_text += "• 😴 Sleep Monitoring\n"
+            welcome_text += "• 🧘 Mental Health\n"
+            welcome_text += "• 👥 Care Circle Support\n\n"
+            welcome_text += "Please login or register to get started:"
+            
             keyboard = [
                 ["Login", "Register"]
             ]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-            await update.message.reply_text("🔐 Please login or register first:", reply_markup=reply_markup)
-            return MAIN_MENU
+            await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=reply_markup)
+            
+            from constants import START
+            return START
     else:
         return await show_dashboard(update, context)
 

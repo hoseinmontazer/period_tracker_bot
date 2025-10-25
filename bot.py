@@ -19,6 +19,7 @@ from modules.notifications.handlers import handle_notification_callback, show_no
 from modules.notifications.messaging_handlers import show_partner_messages, handle_partner_message_menu, handle_message_input
 from modules.users.edit_profile import handle_cycle_length, handle_first_name, handle_last_name, handle_period_duration
 from modules.users.handlers import handle_dashboard, show_dashboard, show_profile, handle_profile_view
+from modules.health.dashboard import show_health_dashboard, handle_health_dashboard, show_health_modules
 from modules.users.partner_handler import  handel_accept_remove_code, start_partner_menu, handle_partner_menu, handle_accept_invitation, handle_remove_partner 
 from modules.periods.handlers import handle_period_date, show_period_history, start_track_period, get_period_start, get_period_symptoms, get_period_medication
 from modules.analysis.handlers import show_cycle_analysis
@@ -52,9 +53,11 @@ def main():
 
     # 3. Add a unique name to your ConversationHandler
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', show_dashboard)],
+        entry_points=[CommandHandler('start', show_health_dashboard)],
         states={
-            MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, show_dashboard)],
+            MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, show_health_dashboard)],
+            HEALTH_DASHBOARD: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_health_dashboard)],
+            HEALTH_MODULES: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_health_dashboard)],
             START: [MessageHandler(filters.TEXT & ~filters.COMMAND, handel_start)],
             START_LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_login_username)],
             START_REGISTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_register_username)],
