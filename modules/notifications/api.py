@@ -105,7 +105,7 @@ async def generate_notifications(token: str):
 
 async def send_partner_message(token: str, receiver_id: int, message: str):
     """Send a message to partner"""
-    url = f"{BASE_URL}api/notifications/notifications/messages/"
+    url = f"{BASE_URL}api/notifications/messages/"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     data = {
         "receiver": receiver_id,
