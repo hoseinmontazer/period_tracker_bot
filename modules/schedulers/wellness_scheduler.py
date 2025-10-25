@@ -54,7 +54,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
 async def wellness_checkin_callback(context: ContextTypes.DEFAULT_TYPE):
     """Send a web-app button + back button to all users for wellness check-in."""
-    logger.info("Running wellness_checkin_callbacksssssssssss")
+    logger.info("Running wellness_checkin_callbacks")
 
    
 

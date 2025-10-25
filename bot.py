@@ -149,7 +149,7 @@ def main():
         # NEW: Schedule Wellness Check-in (e.g., at 12:00 UTC)
         job_queue.run_daily(
             wellness_checkin_callback,
-            time=datetime.time(hour=14, minute=0, tzinfo=datetime.timezone.utc)
+            time=datetime.time(hour=6, minute=2, tzinfo=datetime.timezone.utc)
         )
         logger.info("Scheduled wellness check-in at 12:00")
 
@@ -159,16 +159,12 @@ def main():
             time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc)
         )
         
-        # NEW: Schedule notification checks every 2 hours
-        job_queue.run_repeating(
-            send_notifications_callback,
-            interval=7200,  # 2 hours in seconds
-            first=10  # Start 10 seconds after bot starts
+        # NEW: Schedule notification checks every 24 hours
+        job_queue.run_daily(
+            send_notifications_callback,time=datetime.time(hour=0, minute=0, tzinfo=datetime.timezone.utc)  # adjust tz if needed
         )
-        logger.info("Scheduled notification checks every 2 hours")
-        # job_queue.run_once(wellness_checkin_callback, when=0)
-        # job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))
-        #job_queue.run_once(wellness_checkin_callback, when=datetime.timedelta(seconds=5))
+        logger.info("Scheduled notification checks every 24 hours")
+
 
         # logger.info("Scheduled jobs at 09:00 and 21:00")
     else:

@@ -45,3 +45,4 @@ tox.ini
 .ipynb_checkpoints
 
 user_tokens.json
+./data/*
